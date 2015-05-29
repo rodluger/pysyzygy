@@ -95,6 +95,7 @@ def plot(**kwargs):
   exp_pts = kwargs.get('exp_pts', 10)
   plot_name = kwargs.get('plot_name', 'transit')
   plot_title = kwargs.get('plot_title', '')
+  show_params = kwargs.get('show_params', True)
   
   # Derived stuff
   aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)
@@ -157,9 +158,13 @@ def plot(**kwargs):
     ax2.add_artist(star)
 
   # Inset: Limb darkening
-  inset1 = pl.axes([0.135, 0.32, .1, .1])
+  inset1 = pl.axes([0.145, 0.32, .09, .1])
   inset1.plot(r,Ir,'k-')
-  pl.setp(inset1, xlim=(-0.1,1.1), ylim=(-0.1,1.1), xticks=[], yticks=[])
+  pl.setp(inset1, xlim=(-0.1,1.1), ylim=(-0.1,1.1), xticks=[0,1], yticks=[0,1])
+  for tick in inset1.xaxis.get_major_ticks() + inset1.yaxis.get_major_ticks():
+    tick.label.set_fontsize(8)
+  inset1.set_ylabel(r'I/I$_0$', fontsize=8, labelpad=-8)
+  inset1.set_xlabel(r'r/R$_\star$', fontsize=8, labelpad=-8)
   inset1.set_title('Limb Darkening', fontweight='bold', fontsize=9)
   
   # Inset: Top view of orbit
@@ -209,31 +214,32 @@ def plot(**kwargs):
   ax2.set_ylabel(r'Y (R$_\star$)', fontweight='bold')
   ax1.set_title(plot_title, fontsize=12)
   
-  # Table of parameters
-  ltable = [ r'$P:$',
-             r'$e:$',
-             r'$i:$',
-             r'$\rho_\star:$',
-             r'$M_p:$',
-             r'$R_p:$',
-             r'$u_1:$',
-             r'$u_2:$']
-  rtable = [ r'$%.4f\ \mathrm{days}$' % per,
-             r'$%.5f$' % e,
-             r'$%.4f^\circ$' % (i*180./np.pi),
-             r'$%.5f$' % rhos,
-             r'$%.5f\ M_\star$' % MpMs,
-             r'$%.5f\ R_\star$' % RpRs,
-             r'$%.5f$' % u1,
-             r'$%.5f$' % u2]
-  yt = 0.75
-  for l,r in zip(ltable, rtable):
-    ax1.annotate(l, xy=(0.8, yt), xycoords="axes fraction")
-    ax1.annotate(r, xy=(0.85, yt), xycoords="axes fraction")
-    yt -= 0.085
+  if show_params:
+    # Table of parameters
+    ltable = [ r'$P:$',
+               r'$e:$',
+               r'$i:$',
+               r'$\rho_\star:$',
+               r'$M_p:$',
+               r'$R_p:$',
+               r'$u_1:$',
+               r'$u_2:$']
+    rtable = [ r'$%.4f\ \mathrm{days}$' % per,
+               r'$%.5f$' % e,
+               r'$%.4f^\circ$' % (i*180./np.pi),
+               r'$%.5f$' % rhos,
+               r'$%.5f\ M_\star$' % MpMs,
+               r'$%.5f\ R_\star$' % RpRs,
+               r'$%.5f$' % u1,
+               r'$%.5f$' % u2]
+    yt = 0.75
+    for l,r in zip(ltable, rtable):
+      ax1.annotate(l, xy=(0.8, yt), xycoords="axes fraction")
+      ax1.annotate(r, xy=(0.85, yt), xycoords="axes fraction")
+      yt -= 0.085
 
   fig.savefig(plot_name, bbox_inches='tight')
   pl.close()
 
 if __name__ == '__main__':
-  plot()
+  plot(e = 0.5, i = 87., w = 280.)
