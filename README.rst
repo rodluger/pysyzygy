@@ -7,7 +7,7 @@ py·sy·zy·gy
 
 *noun*
 
-**1.** Simple planet transit visualizations, coded in Python.
+**1.** Simple planet transit (`syzygy <http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29>`_) visualizations, coded in Python.
 
 **2.** The ``pysyzygy`` output looks like this:
 
