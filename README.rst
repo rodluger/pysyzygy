@@ -76,6 +76,9 @@ where ``kwargs`` can be any of:
 * **plot_title** (*str*) -
   The plot title. Default ``""``
 
+* **show_params** (*bool*) -
+  Show the planet parameters on the top plot? Default ``True``
+
 Notes
 =====
 
