@@ -11,6 +11,10 @@ Coded by Rodrigo Luger, May 2015.
 
 """
 
+__version__ = "0.0.1"
+__author__ = "Rodrigo Luger (rodluger@uw.edu)"
+__copyright__ = "Copyright 2015 Rodrigo Luger"
+
 import matplotlib.pyplot as pl
 import transit
 import numpy as np
@@ -257,4 +261,5 @@ def plot(**kwargs):
   pl.close()
 
 if __name__ == '__main__':
-  plot(e = 0.5, i = 87., w = 280.)
+  # Produce a sample plot
+  plot(e = 0.65, i = 87., w = 280.)
