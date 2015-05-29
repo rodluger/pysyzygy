@@ -1,6 +1,9 @@
 py·sy·zy·gy
 -----------
-/ˈpīsizijē/ 
+/ˈpīsizijē/ |speaker|
+
+.. |speaker| image:: http://www.astro.washington.edu/users/rodluger/speaker.png
+   [height=14 width=14]
 
 *noun*
 
