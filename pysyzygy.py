@@ -242,7 +242,7 @@ def plot(**kwargs):
                r'$%.5f$' % e,
                r'$%.4f^\circ$' % (i*180./np.pi),
                r'$%.3f^\circ$' % (w*180./np.pi),
-               r'$%.5f$' % rhos,
+               r'$%.5f\ \mathrm{g/cm^3}$' % rhos,
                r'$%.5f\ M_\star$' % MpMs,
                r'$%.5f\ R_\star$' % RpRs,
                r'$%.5f$' % u1,
