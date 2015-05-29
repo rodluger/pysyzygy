@@ -11,7 +11,7 @@ py·sy·zy·gy
 
 **2.** The ``pysyzygy`` output looks like this:
 
-.. image:: https://raw.githubusercontent.com/rodluger/pysyzygy/master/transit.png
+.. image:: /../master/transit.png?raw=True
    :alt: pysyzygy
    :scale: 50 %
    :align: center
