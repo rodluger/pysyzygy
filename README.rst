@@ -1,6 +1,6 @@
 py·sy·zy·gy
 -----------
-/ˈpīsizijē/ |speaker|
+/ˈpīsizijē/ `|speaker|</../img/pysyzygy.mp3?raw=true>`_
 
 .. |speaker| image:: /../img/speaker.png?raw=true
    [height=14 width=14]
