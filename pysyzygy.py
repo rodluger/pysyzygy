@@ -232,6 +232,7 @@ def plot(**kwargs):
     ltable = [ r'$P:$',
                r'$e:$',
                r'$i:$',
+               r'$\omega:$',
                r'$\rho_\star:$',
                r'$M_p:$',
                r'$R_p:$',
@@ -240,12 +241,13 @@ def plot(**kwargs):
     rtable = [ r'$%.4f\ \mathrm{days}$' % per,
                r'$%.5f$' % e,
                r'$%.4f^\circ$' % (i*180./np.pi),
+               r'$%.3f^\circ$' % (w*180./np.pi),
                r'$%.5f$' % rhos,
                r'$%.5f\ M_\star$' % MpMs,
                r'$%.5f\ R_\star$' % RpRs,
                r'$%.5f$' % u1,
                r'$%.5f$' % u2]
-    yt = 0.75
+    yt = 0.8
     for l,r in zip(ltable, rtable):
       ax1.annotate(l, xy=(0.8, yt), xycoords="axes fraction")
       ax1.annotate(r, xy=(0.85, yt), xycoords="axes fraction")
