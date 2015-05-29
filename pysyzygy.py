@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+pysyzygy.py
+-----------
+A really simple implementation of the Mandel & Agol (2002) transit model
+for planet orbits of arbitrary eccentricity. Plots both the transit
+lightcurve and the orbital path as seen by the observer.
+
+Coded by Rodrigo Luger, May 2015.
+
+"""
+
 import matplotlib.pyplot as pl
 import transit
 import numpy as np
