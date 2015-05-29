@@ -2,7 +2,7 @@ py·sy·zy·gy
 -----------
 /ˈpīsizijē/ |speaker|
 
-.. |speaker| image:: http://www.astro.washington.edu/users/rodluger/speaker.png
+.. |speaker| image:: /../img/speaker.png?raw=true
    [height=14 width=14]
 
 *noun*
