@@ -74,7 +74,7 @@ where ``kwargs`` can be any of:
   The name of the file to save the plot to. Default ``transit.png``
 
 * **plot_title** (*str*) -
-  The plot title. Default ""
+  The plot title. Default ``""``
 
 Notes
 =====
