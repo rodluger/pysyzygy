@@ -2,8 +2,8 @@ py·sy·zy·gy
 -----------
 /ˈpīsizijē/ |speaker|
 
-.. |speaker| image:: /../img/speaker.png?raw=true
-   target: http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3
+.. |speaker| image:: /../img/speaker.png?raw=True
+   target: http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3?raw=True
 
 *noun*
 
