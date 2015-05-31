@@ -1,27 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-pysyzygy.py
------------
+main.py
+-------
 A really simple implementation of the Mandel & Agol (2002) transit model
-for planet orbits of arbitrary eccentricity. Plots both the transit
+for planet orbits of arbitrary eccentricity. Calculates both the transit
 lightcurve and the orbital path as seen by the observer.
 
-Coded by Rodrigo Luger, May 2015.
+Copyright Rodrigo Luger, May 2015.
 
 """
-
-__version__ = "0.0.1"
-__author__ = "Rodrigo Luger (rodluger@uw.edu)"
-__copyright__ = "Copyright 2015 Rodrigo Luger"
 
 import matplotlib.pyplot as pl
 import transit
 import numpy as np
 from scipy.optimize import newton
-
 G = 6.672e-8
 DAYSEC = 86400
+
+__all__ = ['xy', 'plot', 'I']
 
 def diff(E, e, M):
   '''
@@ -45,12 +42,23 @@ def der2(E, e, M):
   '''
   return e*np.sin(E)
 
-def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw):
+def I(r, u1, u2):
+  '''
+  The standard quadratic limb darkening law.
+  
+  '''
+  return (1-u1*(1-np.sqrt(1-r**2))-u2*(1-np.sqrt(1-r**2))**2)/(1-u1/3-u2/6)/np.pi
+
+def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
   '''
   Compute the sky-projected coordinates (x,y) of the orbit given an array of times 
   ``t``, the transit center time ``t0``, the stellar density ``rhos``, the mass ratio
   ``MpMs``, the period ``per``, the circular impact parameter ``bcirc``, 
   e*sin(omega) (``esw``) and e*cos(omega) (``ecw``).
+  
+  :returns: A tuple ``(x, y)`` of the sky-projected coordinates over the array of \
+  times ``t``. If ``mask_star`` is ``True``, the part of the orbit that is obscured \
+  by the star is masked with ``np.nan``
   
   '''
   aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)                      # semi-major axis / stellar radius
@@ -77,18 +85,11 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw):
         y[j] = np.sqrt(b**2 - x[j]**2)
       else:
         y[j] = -np.sqrt(b**2 - x[j]**2)
-    if (((x[j]**2 + y[j]**2) < 1.) and (y[j] > 0)):
+    if (mask_star and (((x[j]**2 + y[j]**2) < 1.) and (y[j] > 0))):
       x[j] = np.nan                                                                   # These get masked when plotting
       y[j] = np.nan
     
   return x, y
-
-def I(r, u1, u2):
-  '''
-  The standard quadratic limb darkening law.
-  
-  '''
-  return (1-u1*(1-np.sqrt(1-r**2))-u2*(1-np.sqrt(1-r**2))**2)/(1-u1/3-u2/6)/np.pi
 
 def plot(**kwargs):
   '''
@@ -262,4 +263,4 @@ def plot(**kwargs):
 
 if __name__ == '__main__':
   # Produce a sample plot
-  plot(e = 0.65, i = 87., w = 280.)
+  plot(e = 0.65, i = 87., w = 180.)
