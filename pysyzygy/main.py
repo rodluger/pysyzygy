@@ -136,14 +136,7 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
   sini = np.sqrt(1. - (bcirc/aRs)**2 )
   e = np.sqrt( esw**2 + ecw**2 )
   w = np.arctan2(esw, ecw)
-  
-  # DEBUG: The following adjustment seems to be necessary... 
-  # Figure out why!
-  if w <= np.pi:
-    w = (np.pi - w)
-  else:
-    w = (3*np.pi - w)
-  
+    
   fi = 3.*np.pi/2 - w                                                                 # True anomaly at transit center (approximate)
   t_peri = t0 + per*np.sqrt(1 - e**2)/(2*np.pi)*(e*np.sin(fi)/(1+e*np.cos(fi)) - 
     2./np.sqrt(1-e**2)*np.arctan2(np.sqrt(1-e**2)*np.tan(fi/2.), 1+e))                # Time of pericenter
@@ -156,7 +149,8 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
     f = 2*np.arctan(((1. + e)/(1. - e))**(1./2)*np.tan(E/2.))                         # True anomaly
     rRs = aRs*(1. - e**2)/(1. + e*np.cos(f))                                          # r/Rs
     b = rRs*np.sqrt(1. - (np.sin(w + f)*sini)**2)                                     # Impact parameter
-    x[j] = -rRs*np.cos(w + f)
+    
+    x[j] = rRs*np.cos(w + f)
     if (b**2 - x[j]**2) < 1e-10:                                                      # Prevent numerical error
       y[j] = 0.
     else:
@@ -422,10 +416,5 @@ def plot(**kwargs):
 
 if __name__ == '__main__':
   # Produce a sample plot
-  plot(e = 0.65, i = 87., w = 180.)
-  
-  '''
-  DEBUG: The following two plots make it clear that omega was off by 180 degrees!
-  plot(e = 0.7, per = 1., w = 290., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 35)
-  pysyzygy.plot(e = 0.7, per = 1., w = 0., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 65)
-  '''
+  plot(e = 0.7, per = 1., w = 0., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., 
+       lc = 'ideal', i = 65)
