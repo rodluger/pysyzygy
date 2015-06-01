@@ -18,7 +18,20 @@ from scipy.optimize import newton
 G = 6.672e-8
 DAYSEC = 86400
 
-__all__ = ['xy', 'plot', 'I']
+__all__ = ['lightcurve', 'xy', 'plot', 'I']
+
+def transit_times(tstart, tstop, t0, per, tdur):
+  '''
+  Calculates all transit times between ``tstart`` and ``tstop``.
+
+  '''
+  n, r = divmod(tstart - t0, per)
+  if r < tdur:
+    t0 = t0 + n*per
+  else:
+    t0 = t0 + (n + 1)*per
+  
+  return np.arange(t0, tstop, per)
 
 def diff(E, e, M):
   '''
@@ -48,6 +61,64 @@ def I(r, u1, u2):
   
   '''
   return (1-u1*(1-np.sqrt(1-r**2))-u2*(1-np.sqrt(1-r**2))**2)/(1-u1/3-u2/6)/np.pi
+
+def lightcurve(t, **kwargs):
+  '''
+  
+  .. note:: To get the ideal lightcurve, simply set ``exp_pts`` to 1.
+  
+  '''
+  
+  # Keywords
+  per = kwargs.get('per', 2.)
+  assert (0 < per), 'Invalid value for the period.'
+  i = kwargs.get('i', 90.)*np.pi/180.
+  assert (0 <= i < 2*np.pi), 'Invalid value for the inclination.'
+  rhos = kwargs.get('rhos', 1.4)
+  assert (0 < rhos), 'Invalid value for the stellar density.'
+  MpMs = kwargs.get('MpMs', 0.001)
+  assert (0 <= MpMs), 'Invalid value for the planet mass.'
+  e = kwargs.get('e', 0.0)
+  assert (0 <= e < 1.0), 'Invalid value for the eccentricity.'
+  w = kwargs.get('w', 270.)*np.pi/180.
+  assert (0 <= w < 2*np.pi), 'Invalid value for omega.'
+  u1 = kwargs.get('u1', 0.8)
+  u2 = kwargs.get('u2', -0.4)
+  assert (0. <= u1 <= 1.) and (0. <= u1 + u2 <= 1.), \
+         'Invalid values for the limb darkening coefficients.'
+  RpRs = kwargs.get('RpRs', 0.1)
+  assert (0 < RpRs < 0.5), 'Invalid value for the planet radius.'
+  exptime = kwargs.get('exptime', 1765.5/86400)
+  assert (0 < exptime), 'Invalid value for the exposure time.'
+  exp_pts = kwargs.get('exp_pts', 10)
+  assert (1 <= exp_pts), 'Invalid value for the number of exposure points.'
+  t0 = kwargs.get('t0', 0.)
+         
+  # Derived stuff
+  flux = np.ones_like(t, dtype=float)
+  aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)
+  if aRs*(1-e) <= 1.:
+    raise Exception('Error: star-crossing orbit!')
+  bcirc = aRs*np.cos(i)
+  esw = e*np.sin(w)
+  ecw = e*np.cos(w)
+  becc = bcirc*(1.-e**2)/(1.+e*np.sin(w-np.pi))
+  with np.errstate(invalid='ignore'):
+    tdur = per/(2*np.pi)*np.arcsin(((1+RpRs)**2-becc**2)**0.5/(np.sin(i)*aRs))        # (half) transit duration
+    tdur *= np.sqrt(1.-e**2.)/(1.+e*np.sin(w-np.pi))                                  # Correct for eccentricity
+  tdur *= 1.5                                                                         # The correction may be off for high eccentricity, so let's do this for safety
+  if np.isnan(tdur):
+    return flux                                                                       # No transits!
+  
+  tN = transit_times(t[0], t[-1], t0, per, tdur)
+  ntrans = len(tN)
+  try:
+    err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
+                          exptime,tN,exp_pts,ntrans,len(t))
+  except:
+    raise Exception('Error: something went wrong while computing the transit.')
+  
+  return flux
 
 def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
   '''
@@ -143,7 +214,7 @@ def plot(**kwargs):
   * **exp_pts** (*int*) -
     The number of calls to the transit module in the exposure window. Default ``10``
 
-  * **lightcurve** (*str*) -
+  * **lc** (*str*) -
     Options are ``"ideal"`` (plots only the ideal lightcurve), ``"observed"`` (plots
     only the observed lightcurve), or ``"both"``. Default ``"both"``
 
@@ -192,9 +263,9 @@ def plot(**kwargs):
   show_params = kwargs.get('show_params', True)
   xypts = kwargs.get('xypts', 1000)
   assert (0 < xypts), 'Invalid value for xypts.'
-  lightcurve = kwargs.get('lightcurve', 'both')
-  assert (lightcurve == 'both') or (lightcurve == 'ideal') or \
-         (lightcurve == 'observed'), 'Invalid option for lightcurve.'
+  lc = kwargs.get('lc', 'both')
+  assert (lc == 'both') or (lc == 'ideal') or \
+         (lc == 'observed'), 'Invalid option for lc.'
   ldplot = kwargs.get('ldplot', True)
   
   # Derived stuff
@@ -220,18 +291,18 @@ def plot(**kwargs):
 
   if not np.isnan(window):
     try:
-      # The ideal lightcurve
-      if (lightcurve == 'both') or (lightcurve == 'ideal'):
+      # The ideal lc
+      if (lc == 'both') or (lc == 'ideal'):
         flux = np.ones_like(t, dtype=float)
         err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
                               exptime,tN,1,ntrans,len(t))
-        if lightcurve == 'both':
+        if lc == 'both':
           ax1.plot(t,flux, '-', color='DarkBlue', alpha = 0.25, label='Ideal')
-        elif lightcurve == 'ideal':
+        elif lc == 'ideal':
           ax1.plot(t,flux, '-', color='DarkBlue', alpha = 1.0, label='Ideal')
   
-      # The blurred lightcurve due to the finite exposure time
-      if (lightcurve == 'both') or (lightcurve == 'observed'):
+      # The blurred lc due to the finite exposure time
+      if (lc == 'both') or (lc == 'observed'):
         flux = np.ones_like(t, dtype=float)
         err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
                               exptime,tN,exp_pts,ntrans,len(t))
@@ -355,6 +426,6 @@ if __name__ == '__main__':
   
   '''
   DEBUG: The following two plots make it clear that omega was off by 180 degrees!
-  plot(e = 0.7, per = 1., w = 290., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lightcurve = 'ideal', i = 35)
-  pysyzygy.plot(e = 0.7, per = 1., w = 0., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lightcurve = 'ideal', i = 65)
+  plot(e = 0.7, per = 1., w = 290., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 35)
+  pysyzygy.plot(e = 0.7, per = 1., w = 0., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 65)
   '''

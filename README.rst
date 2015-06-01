@@ -73,7 +73,7 @@ where ``kwargs`` can be any of:
   * **exp_pts** (*int*) -
     The number of calls to the transit module in the exposure window. Default ``10``
 
-  * **lightcurve** (*str*) -
+  * **lc** (*str*) -
     Options are ``"ideal"`` (plots only the ideal lightcurve), ``"observed"`` (plots
     only the observed lightcurve), or ``"both"``. Default ``"both"``
 
