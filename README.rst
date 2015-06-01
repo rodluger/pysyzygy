@@ -9,7 +9,7 @@ py·sy·zy·gy
 
 **1.** Simple planet transit (`syzygy <http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29>`_) visualizations, coded in Python.
 
-**2.** The ``pysyzygy`` output looks like this:
+**2.** The ``pysyzygy`` output looks like this (check out the transit asymmetry!):
 
 .. image:: /../img/transit.png?raw=True
    :alt: pysyzygy
