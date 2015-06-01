@@ -123,7 +123,7 @@ def plot(**kwargs):
     The density of the star in g/cm^3. Default ``1.4``
   
   * **RpRs** (*float*) -
-    The ratio of the planet radius to the stellar radius, between ``[0., 0.5]``. 
+    The ratio of the planet radius to the stellar radius, in the range ``[0., 0.5]``. 
     Default ``0.1``
   
   * **u1** (*float*) -
@@ -131,8 +131,8 @@ def plot(**kwargs):
     Default ``0.8``
 
   * **u2** (*float*) -
-    The quadratic LD coefficient. ``u1 + u2`` must be in the range ``(0., 1.)``. 
-    Default ``-0.4``
+    The quadratic LD coefficient. Note that the sum ``u1 + u2`` must be in the 
+    range ``(0., 1.)``. Default ``-0.4``
 
   * **w** (*float*) -
     The argument of periapsis in degrees. Default ``270.``
