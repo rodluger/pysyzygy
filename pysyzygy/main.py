@@ -65,6 +65,14 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
   sini = np.sqrt(1. - (bcirc/aRs)**2 )
   e = np.sqrt( esw**2 + ecw**2 )
   w = np.arctan2(esw, ecw)
+  
+  # DEBUG: The following adjustment seems to be necessary... 
+  # Figure out why!
+  if w <= np.pi:
+    w = (np.pi - w)
+  else:
+    w = (3*np.pi - w)
+  
   fi = 3.*np.pi/2 - w                                                                 # True anomaly at transit center (approximate)
   t_peri = t0 + per*np.sqrt(1 - e**2)/(2*np.pi)*(e*np.sin(fi)/(1+e*np.cos(fi)) - 
     2./np.sqrt(1-e**2)*np.arctan2(np.sqrt(1-e**2)*np.tan(fi/2.), 1+e))                # Time of pericenter
@@ -93,32 +101,106 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
 
 def plot(**kwargs):
   '''
-  The main plotting routine. Plots the lightcurve and the sky-projected orbit.
+  The main plotting routine. Plots the lightcurve and the sky-projected orbit, and
+  saves the image to disk.
   
+  :Keyword Arguments:
+  
+  * **e** (*float*) - 
+    The eccentricity of the orbit, in the range ``(0., 1.]``. Default ``0.``
+
+  * **i** (*float*) -
+    The inclination of the orbit in degrees, in the range ``(0., 90.)``. 
+    Default ``90.``
+
+  * **MpMs** (*float*) -
+    The ratio of the planet mass to the stellar mass. Default ``0.001``
+
+  * **per** (*float*) -
+    The period of the planet in days. Default ``2.``
+
+  * **rhos** (*float*) -
+    The density of the star in g/cm^3. Default ``1.4``
+  
+  * **RpRs** (*float*) -
+    The ratio of the planet radius to the stellar radius, between ``[0., 0.5]``. 
+    Default ``0.1``
+  
+  * **u1** (*float*) -
+    The linear stellar limb darkening coefficient, in the range ``(0., 1.)``. 
+    Default ``0.8``
+
+  * **u2** (*float*) -
+    The quadratic LD coefficient. ``u1 + u2`` must be in the range ``(0., 1.)``. 
+    Default ``-0.4``
+
+  * **w** (*float*) -
+    The argument of periapsis in degrees. Default ``270.``
+
+  * **exptime** (*float*) -
+    The exposure time in days. Default ``0.020434`` (Kepler long cadence)
+
+  * **exp_pts** (*int*) -
+    The number of calls to the transit module in the exposure window. Default ``10``
+
+  * **lightcurve** (*str*) -
+    Options are ``"ideal"`` (plots only the ideal lightcurve), ``"observed"`` (plots
+    only the observed lightcurve), or ``"both"``. Default ``"both"``
+
+  * **ldplot** (*bool*) -
+    Plot the limb darkening profile inset? Default ``True``
+
+  * **plot_name** (*str*) -
+    The name of the file to save the plot to. Default ``transit.png``
+
+  * **plot_title** (*str*) -
+    The plot title. Default ``""``
+
+  * **show_params** (*bool*) -
+    Show the planet parameters on the top plot? Default ``True``
+  
+  * **xypts** (*int*) -
+    The number of points to use when plotting the orbit. Default ``1000``
+    
   '''
   
   # Keywords
   per = kwargs.get('per', 2.)
+  assert (0 < per), 'Invalid value for the period.'
   i = kwargs.get('i', 90.)*np.pi/180.
+  assert (0 <= i < 2*np.pi), 'Invalid value for the inclination.'
   rhos = kwargs.get('rhos', 1.4)
+  assert (0 < rhos), 'Invalid value for the stellar density.'
   MpMs = kwargs.get('MpMs', 0.001)
+  assert (0 <= MpMs), 'Invalid value for the planet mass.'
   e = kwargs.get('e', 0.0)
+  assert (0 <= e < 1.0), 'Invalid value for the eccentricity.'
   w = kwargs.get('w', 270.)*np.pi/180.
+  assert (0 <= w < 2*np.pi), 'Invalid value for omega.'
   u1 = kwargs.get('u1', 0.8)
   u2 = kwargs.get('u2', -0.4)
   assert (0. <= u1 <= 1.) and (0. <= u1 + u2 <= 1.), \
-         'Invalid range for limb darkening coefficients.'
+         'Invalid values for the limb darkening coefficients.'
   RpRs = kwargs.get('RpRs', 0.1)
+  assert (0 < RpRs < 0.5), 'Invalid value for the planet radius.'
   exptime = kwargs.get('exptime', 1765.5/86400)
+  assert (0 < exptime), 'Invalid value for the exposure time.'
   exp_pts = kwargs.get('exp_pts', 10)
+  assert (1 <= exp_pts), 'Invalid value for the number of exposure points.'
   plot_name = kwargs.get('plot_name', 'transit')
   plot_title = kwargs.get('plot_title', '')
   show_params = kwargs.get('show_params', True)
+  xypts = kwargs.get('xypts', 1000)
+  assert (0 < xypts), 'Invalid value for xypts.'
+  lightcurve = kwargs.get('lightcurve', 'both')
+  assert (lightcurve == 'both') or (lightcurve == 'ideal') or \
+         (lightcurve == 'observed'), 'Invalid option for lightcurve.'
+  ldplot = kwargs.get('ldplot', True)
   
   # Derived stuff
   aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)
   if aRs*(1-e) <= 1.:
-    raise Exception('Star-crossing orbit!')
+    raise Exception('Error: star-crossing orbit!')
   bcirc = aRs*np.cos(i)
   esw = e*np.sin(w)
   ecw = e*np.cos(w)
@@ -139,16 +221,21 @@ def plot(**kwargs):
   if not np.isnan(window):
     try:
       # The ideal lightcurve
-      flux = np.ones_like(t, dtype=float)
-      err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
-                                   exptime,tN,1,ntrans,len(t))
-      ax1.plot(t,flux, '-', color='DarkBlue', alpha = 0.25, label='Ideal')
+      if (lightcurve == 'both') or (lightcurve == 'ideal'):
+        flux = np.ones_like(t, dtype=float)
+        err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
+                              exptime,tN,1,ntrans,len(t))
+        if lightcurve == 'both':
+          ax1.plot(t,flux, '-', color='DarkBlue', alpha = 0.25, label='Ideal')
+        elif lightcurve == 'ideal':
+          ax1.plot(t,flux, '-', color='DarkBlue', alpha = 1.0, label='Ideal')
   
       # The blurred lightcurve due to the finite exposure time
-      flux = np.ones_like(t, dtype=float)
-      err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
-                                   exptime,tN,exp_pts,ntrans,len(t))
-      ax1.plot(t,flux, '-', color='DarkBlue', label='Observed')
+      if (lightcurve == 'both') or (lightcurve == 'observed'):
+        flux = np.ones_like(t, dtype=float)
+        err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
+                              exptime,tN,exp_pts,ntrans,len(t))
+        ax1.plot(t,flux, '-', color='DarkBlue', label='Observed')
     
       rng = np.max(flux) - np.min(flux)
       ax1.set_ylim(np.min(flux) - 0.1*rng, np.max(flux) + 0.1*rng)
@@ -164,7 +251,7 @@ def plot(**kwargs):
     ax1.text(0.5,0.5,'No transit',ha='center',va='center')
 
   # Sky-projected motion
-  t = np.linspace(-per/2,per/2,1000)
+  t = np.linspace(-per/2,per/2,xypts)
   x, y = xy(t, tN[0], rhos, MpMs, per, bcirc, esw, ecw)
   
   # The star
@@ -176,14 +263,15 @@ def plot(**kwargs):
     ax2.add_artist(star)
 
   # Inset: Limb darkening
-  inset1 = pl.axes([0.145, 0.32, .09, .1])
-  inset1.plot(r,Ir,'k-')
-  pl.setp(inset1, xlim=(-0.1,1.1), ylim=(-0.1,1.1), xticks=[0,1], yticks=[0,1])
-  for tick in inset1.xaxis.get_major_ticks() + inset1.yaxis.get_major_ticks():
-    tick.label.set_fontsize(8)
-  inset1.set_ylabel(r'I/I$_0$', fontsize=8, labelpad=-8)
-  inset1.set_xlabel(r'r/R$_\star$', fontsize=8, labelpad=-8)
-  inset1.set_title('Limb Darkening', fontweight='bold', fontsize=9)
+  if ldplot:
+    inset1 = pl.axes([0.145, 0.32, .09, .1])
+    inset1.plot(r,Ir,'k-')
+    pl.setp(inset1, xlim=(-0.1,1.1), ylim=(-0.1,1.1), xticks=[0,1], yticks=[0,1])
+    for tick in inset1.xaxis.get_major_ticks() + inset1.yaxis.get_major_ticks():
+      tick.label.set_fontsize(8)
+    inset1.set_ylabel(r'I/I$_0$', fontsize=8, labelpad=-8)
+    inset1.set_xlabel(r'r/R$_\star$', fontsize=8, labelpad=-8)
+    inset1.set_title('Limb Darkening', fontweight='bold', fontsize=9)
   
   # Inset: Top view of orbit
   inset2 = pl.axes([0.135, 0.115, .1, .1])
@@ -264,3 +352,9 @@ def plot(**kwargs):
 if __name__ == '__main__':
   # Produce a sample plot
   plot(e = 0.65, i = 87., w = 180.)
+  
+  '''
+  DEBUG: The following two plots make it clear that omega was off by 180 degrees!
+  plot(e = 0.7, per = 1., w = 290., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lightcurve = 'ideal', i = 35)
+  pysyzygy.plot(e = 0.7, per = 1., w = 0., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., lightcurve = 'ideal', i = 65)
+  '''
