@@ -9,7 +9,7 @@ py·sy·zy·gy
 
 **1.** Simple planet transit (`syzygy <http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29>`_) visualizations, coded in Python.
 
-**2.** The ``pysyzygy`` output looks like this (check out the transit asymmetry!):
+**2.** ``pysyzygy`` computes **fast** lightcurves for the most general case of a *massive*, *eccentric* planet orbiting a limb-darkened star. Here's a sample output image of an assymetric transit:
 
 .. image:: /../img/transit.png?raw=True
    :alt: pysyzygy
@@ -114,3 +114,11 @@ where ``t`` is the input time array and ``kwargs`` are the same as before (thoug
 to get a tuple ``(x, y)`` of the sky-projected coordinates of the planet at times ``t``.
 
 Feel free to change, adapt, or incorporate this code into your project, but please make sure to cite this repository, as well as `Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_, the transit model on which ``pysyzygy`` is based.
+
+Coming Soon
+===========
+
+- Flexible input arguments (i.e., ``i`` and ``a/R_star`` instead of ``bcirc``, ``e`` and ``w`` instead of ``esinw`` and ``ecosw``, etc.)
+- Nonlinear (four-parameter) limb-darkening
+- Multi-planet systems
+- Star spots (maybe)
