@@ -65,12 +65,12 @@ C Calculate some variables
       aRs=((G*rhos*(1.d0+MpMs)*(per*DAYSEC)**2.d0)/
      &     (3.d0*pi))**(1.d0/3.d0)
       inc = acos(bcirc/aRs)
-      w = atan(esw,ecw)
+      w = atan2(esw,ecw)
       ecc = sqrt(esw**2.d0 + ecw**2.d0)
       fi = 3.d0*pi/2.d0 - w
       tperi0=per*sqrt(1.d0-ecc**2.d0)/(2.d0*pi)*(ecc*sin(fi)/
      &               (1.d0+ecc*cos(fi)) 
-     & -2.d0/sqrt(1.d0-ecc**2.d0)*atan(sqrt(1.d0-ecc**2)*
+     & -2.d0/sqrt(1.d0-ecc**2.d0)*atan2(sqrt(1.d0-ecc**2)*
      &                           tan(fi/2.d0),1.d0+ecc))
 C Equation (7) in Winn review
       becc = bcirc*(1.d0-ecc**2.d0)/(1.d0+ecc*sin(w-pi))
@@ -112,7 +112,8 @@ C you never know, especially at high ecc.
             return
           endif
         endif
-        f = 2.d0*atan(((1.d0+ecc)/(1.d0-ecc))**(0.5d0)*tan(EA/2.d0))
+        f = 2.d0*atan2((1.d0+ecc)**0.5d0*sin(EA/2.d0),
+     &                 (1.d0-ecc)**0.5d0*cos(EA/2.d0))
         rRs = aRs*(1.d0-ecc**2.d0)/(1.d0+ecc*cos(f))
         z = rRs*sqrt(1.d0-(sin(w+f)*sin(inc))**2.d0)
       end do 
@@ -158,7 +159,8 @@ C Newton's method ---------------->
           endif
         endif
 C <---------------------------------   
-        f = 2.d0*atan(((1.d0+ecc)/(1.d0-ecc))**(0.5d0)*tan(EA/2.d0))
+        f = 2.d0*atan2((1.d0+ecc)**0.5d0*sin(EA/2.d0),
+     &                 (1.d0-ecc)**0.5d0*cos(EA/2.d0))
         rRs = aRs*(1.d0-ecc**2.d0)/(1.d0+ecc*cos(f))
         z = rRs*sqrt(1.d0-(sin(w+f)*sin(inc))**2.d0)
 C        
