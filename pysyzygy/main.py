@@ -332,8 +332,9 @@ def plot(**kwargs):
       # The ideal lc
       if (lc == 'both') or (lc == 'ideal'):
         flux = np.ones_like(t, dtype=float)
-        err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
-                              exptime,tN,1,ntrans,len(t))
+        err = np.array([0], dtype=int)                                                # TODO: Add error handling
+        transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
+                        exptime,tN,1,err,ntrans,len(t))
         if lc == 'both':
           ax1.plot(t,flux, '-', color='DarkBlue', alpha = 0.25, label='Ideal')
         elif lc == 'ideal':
@@ -342,8 +343,9 @@ def plot(**kwargs):
       # The blurred lc due to the finite exposure time
       if (lc == 'both') or (lc == 'observed'):
         flux = np.ones_like(t, dtype=float)
-        err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
-                              exptime,tN,exp_pts,ntrans,len(t))
+        err = np.array([0], dtype=int)
+        transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
+                        exptime,tN,exp_pts,err,ntrans,len(t))
         ax1.plot(t,flux, '-', color='DarkBlue', label='Observed')
     
       rng = np.max(flux) - np.min(flux)

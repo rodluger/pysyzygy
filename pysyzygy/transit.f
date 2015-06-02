@@ -1,11 +1,5 @@
       subroutine transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,
-     &           u1,u2,p,exptime,tN,nz,nt,ndata,err)
-C
-C
-C TO BULID
-C f2py -c transit.f -m transit
-C
-C
+     &           u1,u2,p,exptime,tN,nz,err,nt,ndata)
 C  This routine computes the lightcurve for occultation
 C  of a quadratically limb-darkened source without microlensing.
 C  Please cite Mandel & Agol (2002) if you make use of this routine
@@ -20,13 +14,15 @@ C  agol@tapir.caltech.edu
      &       kap1,q,Kk,Ek,Pk,n,ellec,ellk,rj,dt,G,DAYSEC,aRs,
      &       inc,becc,w,ecc,fi,tperi0,M,EA,f,rRs,fx,fxprime,deltax,
      &       kepler,keplerderiv
-      integer, intent(out) :: err
+      integer err
       integer maxiter
       double precision tol
+      integer NOERROR, KEPMAXITER
+      parameter (NOERROR = 0, KEPMAXITER = 1)
       parameter (maxiter=20)
       parameter (tol=1.d-14)
       if(abs(p-0.5d0).lt.1.d-3) p=0.5d0
-      err=0
+      err=NOERROR
 C
 C Input:
 C
@@ -52,7 +48,9 @@ C
 C
 C Output:
 C
-C err      if nonzero, something bad happened
+C err      Error flags. 
+C          (1) KEPMAXITER: Maximum number of iterations exceeded in
+C              the Kepler problem
 C
 C Limb darkening has the form:
 C  I(r)=[1-u1*(1-sqrt(1-(r/rs)^2))-u2*
@@ -110,7 +108,7 @@ C you never know, especially at high ecc.
         enddo
         if (s > maxiter) then
           if (abs(kepler(EA,ecc,M)) > tol) then
-            err = 1
+            err = KEPMAXITER
             return
           endif
         endif
@@ -155,7 +153,7 @@ C Newton's method ---------------->
         enddo
         if (s > maxiter) then
           if (abs(kepler(EA,ecc,M)) > tol) then
-            err = 1
+            err = KEPMAXITER
             return
           endif
         endif
@@ -457,3 +455,6 @@ C integral of the first kind (Hasting's approximation):
       return
       END
 C  (C) Copr. 1986-92 Numerical Recipes Software 0NL&WR2.
+
+C TO BULID
+C f2py -c transit.f -m transit
