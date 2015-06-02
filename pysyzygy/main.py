@@ -64,12 +64,56 @@ def I(r, u1, u2):
 
 def lightcurve(t, **kwargs):
   '''
+  Returns an array of flux values for each point in the array ``t`` corresponding
+  to the transit lightcurve of the planet.
   
-  .. note:: To get the ideal lightcurve, simply set ``exp_pts`` to 1.
+  :Keyword Arguments:
+  
+  * **e** (*float*) - 
+    The eccentricity of the orbit, in the range ``(0., 1.]``. Default ``0.``
+
+  * **i** (*float*) -
+    The inclination of the orbit in degrees, in the range ``(0., 90.)``. 
+    Default ``90.``
+
+  * **MpMs** (*float*) -
+    The ratio of the planet mass to the stellar mass. Default ``0.001``
+
+  * **per** (*float*) -
+    The period of the planet in days. Default ``2.``
+
+  * **rhos** (*float*) -
+    The density of the star in g/cm^3. Default ``1.4``
+  
+  * **RpRs** (*float*) -
+    The ratio of the planet radius to the stellar radius, in the range ``[0., 0.5]``. 
+    Default ``0.1``
+  
+  * **t0** (*float*) -
+    The time of transit center for the first transit. Default ``0.0``
+  
+  * **u1** (*float*) -
+    The linear stellar limb darkening coefficient, in the range ``(0., 1.)``. 
+    Default ``0.8``
+
+  * **u2** (*float*) -
+    The quadratic LD coefficient. Note that the sum ``u1 + u2`` must be in the 
+    range ``(0., 1.)``. Default ``-0.4``
+
+  * **w** (*float*) -
+    The argument of periapsis in degrees. Default ``270.``
+
+  * **exptime** (*float*) -
+    The exposure time in days. Default ``0.020434`` (Kepler long cadence)
+
+  * **exp_pts** (*int*) -
+    The number of calls to the transit module in the exposure window. Default ``10``
+    
+  .. note:: To get the ideal lightcurve (unblurred by the exposure time), \
+  simply set ``exp_pts`` to 1.
   
   '''
-  
-  # Keywords
+
   per = kwargs.get('per', 2.)
   assert (0 < per), 'Invalid value for the period.'
   i = kwargs.get('i', 90.)*np.pi/180.

@@ -99,4 +99,18 @@ By default, ``pysyzygy`` outputs a PNG image file with two subplots. The top plo
 
 The bottom plot is the orbit of the planet, as seen by us. Everything is to scale, normalized to the stellar radius. The star is colored according to the assigned limb darkening profile, which is plotted at the top left. The inset on the bottom left is a top view of the orbit, aligned so that the observer is at the bottom.
 
+If you're just interested in the lightcurve, call
+
+.. code-block:: python
+  
+   pysyzygy.lightcurve(t, **kwargs)
+
+where ``t`` is the input time array and ``kwargs`` are the same as before (though here you can also set ``t0``, the time of first transit). If you're just interested in the orbital solution, call
+
+.. code-block:: python
+  
+   pysyzygy.xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True)
+
+to get a tuple ``(x, y)`` of the sky-projected coordinates of the planet at times ``t``.
+
 Feel free to change, adapt, or incorporate this code into your project, but please make sure to cite this repository, as well as `Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_, the transit model on which ``pysyzygy`` is based.
