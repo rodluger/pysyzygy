@@ -135,6 +135,10 @@ C Loop over all transits
       enddo
 C Loop over all indices within the transit
       do k=istart,istop
+C It's really sad that this next line is necessary.
+      if (istart.eq.istop) then
+        exit
+      endif      
       dt = t(k)-tN(j)
       favg = 0.d0
 C Loop over each point within the exposure:
