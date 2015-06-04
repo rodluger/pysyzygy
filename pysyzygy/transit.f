@@ -117,6 +117,34 @@ C you never know, especially at high ecc.
         rRs = aRs*(1.d0-ecc**2.d0)/(1.d0+ecc*cos(f))
         z = rRs*sqrt(1.d0-(sin(w+f)*sin(inc))**2.d0)
       end do 
+C And now the impact parameter at the left edge of the window
+C corresponding to the last time point.
+      z = 0.d0      
+      window = window/1.1d0
+      do while (z.lt.(1.d0 + p))
+        window = window*1.1d0
+        M = 2.d0*pi/per*(t0 + window - tperi0)    
+        EA = M  
+        do s=1,maxiter
+          fx = kepler(EA,ecc,M)
+          fxprime = keplerderiv(EA,ecc,M)
+          if (abs(fx) < tol) then
+            exit
+          endif
+          deltax = fx/fxprime
+          EA = EA - deltax
+        enddo
+        if (s > maxiter) then
+          if (abs(kepler(EA,ecc,M)) > tol) then
+            err = KEPMAXITER
+            return
+          endif
+        endif
+        f = 2.d0*atan2((1.d0+ecc)**0.5d0*sin(EA/2.d0),
+     &                 (1.d0-ecc)**0.5d0*cos(EA/2.d0))
+        rRs = aRs*(1.d0-ecc**2.d0)/(1.d0+ecc*cos(f))
+        z = rRs*sqrt(1.d0-(sin(w+f)*sin(inc))**2.d0)
+      end do 
       
 C Find istart and istop (indices corresponding to points of first & last
 C contact).

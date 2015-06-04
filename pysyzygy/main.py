@@ -15,10 +15,11 @@ import matplotlib.pyplot as pl
 import transit
 import numpy as np
 from scipy.optimize import newton
+import os, sys, subprocess
 G = 6.672e-8
 DAYSEC = 86400
 
-__all__ = ['lightcurve', 'xy', 'plot', 'I']
+__all__ = ['lightcurve', 'xy', 'plot', 'I', 'animate']
 
 def transit_times(tstart, tstop, t0, per, tdur):
   '''
@@ -305,6 +306,7 @@ def plot(**kwargs):
   assert (lc == 'both') or (lc == 'ideal') or \
          (lc == 'observed'), 'Invalid option for lc.'
   ldplot = kwargs.get('ldplot', True)
+  WFAC = 3.0
   
   # Derived stuff
   aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)
@@ -317,7 +319,7 @@ def plot(**kwargs):
   with np.errstate(invalid='ignore'):
     window = per/(2*np.pi)*np.arcsin(((1+RpRs)**2-becc**2)**0.5/(np.sin(i)*aRs))
     window *= np.sqrt(1.-e**2.)/(1.+e*np.sin(w-np.pi))
-  t = np.arange(-3*window,3*window,1.e-4)
+  t = np.arange(-WFAC*window,WFAC*window,1.e-4)
   tN = np.array([0.])                                                                 # Array of transit times
   ntrans = len(tN)                                                                    # Number of transits
 
@@ -350,7 +352,7 @@ def plot(**kwargs):
     
       rng = np.max(flux) - np.min(flux)
       ax1.set_ylim(np.min(flux) - 0.1*rng, np.max(flux) + 0.1*rng)
-      ax1.set_xlim(-3*window,3*window)
+      ax1.set_xlim(-WFAC*window,WFAC*window)
       ax1.set_xlabel('Time (Days)', fontweight='bold')
       ax1.set_ylabel('Normalized Flux', fontweight='bold')
       ax1.legend(loc='lower left', fontsize=10)
@@ -460,7 +462,63 @@ def plot(**kwargs):
   fig.savefig(plot_name, bbox_inches='tight')
   pl.close()
 
+def animate(name, vals, **kwargs):
+  """
+  Generates an animated gif by looping over a given parameter.
+  
+  :param str name: The name of the parameter to loop over. Must be one of the \
+  keyword arguments to ``plot()``
+  
+  :param array_like vals: The array of values of the parameter
+  
+  :Keyword Arguments:
+  
+  * **delay** (*int*) -
+  The delay between frames in ms. Default ``20``
+  
+  * **loop** (*bool*) -
+  Loop the gif? Default ``True``
+  
+  * **plot_name** (*str*) -
+  The name of the file to save the animation to. Default ``anim.gif``
+  
+  """
+  
+  plot_name = kwargs.get('plot_name', 'anim')
+  if not plot_name.endswith('.gif'): plot_name += '.gif'
+  delay = kwargs.get('delay', 20)
+  delay = str(delay)
+  loop = kwargs.get('loop', True)
+  if loop: loop = '-1'
+  else: loop = '0'
+  
+  # Let's keep things realistic
+  assert (len(vals) < 1000), 'The size of the array must be less than 1000.'
+  
+  # Create a temporary directory
+  if not os.path.exists('tmp'):
+    os.makedirs('tmp')
+  
+  for i,v in enumerate(vals):
+    kwargs.update({'plot_name': 'tmp/%03d.png' % i})
+    kwargs.update({name: v})
+    sys.stdout.write("\rPlotting frame %03d/%03d..." % (i + 1, len(vals)))
+    sys.stdout.flush()
+    plot(**kwargs)
+  
+  # Now clear the line
+  sys.stdout.write("\r "*30 + "\r")
+  
+  # Make gif
+  subprocess.call(['convert', '-delay', delay, '-loop', loop, 'tmp/*.png', plot_name])
+  subprocess.call(['rm', '-r', 'tmp'])
+
 if __name__ == '__main__':
   # Produce a sample plot
-  plot(e = 0.7, per = 1., w = 0., xypts=10000, rhos=1., u1 = 0.5, u2 = 0., 
-       lc = 'ideal', i = 65)
+  plot(e = 0.7, per = 1., w = 0., xypts=10000, 
+       rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 65)
+  
+  # Produce a sample animation
+  w = np.linspace(170., 375., 100) % 360.
+  w = np.concatenate((w, w[::-1]))
+  animate('w', w, e=0.7, per=1., rhos=1., u1=0.5, u2=0., lc = 'ideal', i = 65)
