@@ -118,7 +118,7 @@ Feel free to change, adapt, or incorporate this code into your project, but plea
 Coming Soon
 ===========
 
-- Flexible input arguments (i.e., ``i`` and ``a/R_star`` instead of ``bcirc``, ``e`` and ``w`` instead of ``esinw`` and ``ecosw``, etc.)
+- Flexible input arguments (i.e., ``q1`` and ``q2`` instead of ``u1`` and ``u2``, ``Ms`` and ``Rs`` instead of ``rhos``, etc.)
 - Nonlinear (four-parameter) limb-darkening
 - Multi-planet systems
 - Star spots (maybe)
