@@ -266,8 +266,8 @@ def plot(**kwargs):
   * **plot_title** (*str*) -
     The plot title. Default ``""``
 
-  * **show_params** (*bool*) -
-    Show the planet parameters on the top plot? Default ``True``
+  * **compact** (*bool*) -
+    Compact plotting? Default ``False``
   
   * **xypts** (*int*) -
     The number of points to use when plotting the orbit. Default ``1000``
@@ -299,7 +299,7 @@ def plot(**kwargs):
   assert (1 <= exp_pts), 'Invalid value for the number of exposure points.'
   plot_name = kwargs.get('plot_name', 'transit')
   plot_title = kwargs.get('plot_title', '')
-  show_params = kwargs.get('show_params', True)
+  compact = kwargs.get('compact', False)
   xypts = kwargs.get('xypts', 1000)
   assert (0 < xypts), 'Invalid value for xypts.'
   lc = kwargs.get('lc', 'both')
@@ -377,7 +377,10 @@ def plot(**kwargs):
 
   # Inset: Limb darkening
   if ldplot:
-    inset1 = pl.axes([0.145, 0.32, .09, .1])
+    if compact:
+      inset1 = pl.axes([0.145, 0.32, .09, .1])
+    else:
+      inset1 = fig.add_axes([0.925,0.3,0.2,0.15])
     inset1.plot(r,Ir,'k-')
     pl.setp(inset1, xlim=(-0.1,1.1), ylim=(-0.1,1.1), xticks=[0,1], yticks=[0,1])
     for tick in inset1.xaxis.get_major_ticks() + inset1.yaxis.get_major_ticks():
@@ -385,9 +388,12 @@ def plot(**kwargs):
     inset1.set_ylabel(r'I/I$_0$', fontsize=8, labelpad=-8)
     inset1.set_xlabel(r'r/R$_\star$', fontsize=8, labelpad=-8)
     inset1.set_title('Limb Darkening', fontweight='bold', fontsize=9)
-  
+    
   # Inset: Top view of orbit
-  inset2 = pl.axes([0.135, 0.115, .1, .1])
+  if compact:
+    inset2 = pl.axes([0.135, 0.115, .1, .1])
+  else:
+    inset2 = fig.add_axes([0.925,0.1,0.2,0.15])
   pl.setp(inset2, xticks=[], yticks=[])
   t = np.linspace(-per/2,per/2,1000)
   xp, yp = xy(t, tN[0], rhos, MpMs, per, aRs, esw, ecw)
@@ -433,7 +439,12 @@ def plot(**kwargs):
   ax2.set_ylabel(r'Y (R$_\star$)', fontweight='bold')
   ax1.set_title(plot_title, fontsize=12)
   
-  if show_params:
+  if not compact:
+    rect = 0.925,0.55,0.2,0.35
+    ax3 = fig.add_axes(rect)
+    ax3.xaxis.set_visible(False)
+    ax3.yaxis.set_visible(False)
+
     # Table of parameters
     ltable = [ r'$P:$',
                r'$e:$',
@@ -453,11 +464,11 @@ def plot(**kwargs):
                r'$%.5f\ R_\star$' % RpRs,
                r'$%.5f$' % u1,
                r'$%.5f$' % u2]
-    yt = 0.8
+    yt = 0.875
     for l,r in zip(ltable, rtable):
-      ax1.annotate(l, xy=(0.8, yt), xycoords="axes fraction")
-      ax1.annotate(r, xy=(0.85, yt), xycoords="axes fraction")
-      yt -= 0.085
+      ax3.annotate(l, xy=(0.25, yt), xycoords="axes fraction", ha='right', fontsize=16)
+      ax3.annotate(r, xy=(0.35, yt), xycoords="axes fraction", fontsize=16)
+      yt -= 0.1
 
   fig.savefig(plot_name, bbox_inches='tight')
   pl.close()
@@ -519,6 +530,6 @@ if __name__ == '__main__':
        rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 65)
   
   # Produce a sample animation
-  w = np.linspace(170., 375., 100) % 360.
-  w = np.concatenate((w, w[::-1]))
-  animate('w', w, e=0.7, per=1., rhos=1., u1=0.5, u2=0., lc = 'ideal', i = 65)
+  #w = np.linspace(170., 375., 100) % 360.
+  #w = np.concatenate((w, w[::-1]))
+  #animate('w', w, e=0.7, per=1., rhos=1., u1=0.5, u2=0., lc = 'ideal', i = 65)
