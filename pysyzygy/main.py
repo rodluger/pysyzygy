@@ -526,8 +526,8 @@ def animate(name, vals, **kwargs):
 
 if __name__ == '__main__':
   # Produce a sample plot
-  plot(e = 0.7, per = 1., w = 0., xypts=10000, 
-       rhos=1., u1 = 0.5, u2 = 0., lc = 'ideal', i = 65)
+  plot(e = 0.7, per = 1., w = 350., xypts=10000, 
+       rhos=1., u1 = 0.75, u2 = -0.1, lc = 'ideal', i = 65)
   
   # Produce a sample animation
   #w = np.linspace(170., 375., 100) % 360.
