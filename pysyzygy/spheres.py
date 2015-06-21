@@ -3,7 +3,7 @@
 Created on Wed Feb 19 12:05:15 2014 by Brett Morris (bmorris3)
 
 To run a quick example, try:
-    from spheres import Sphere
+    from pysyzygy.spheres import Sphere
     s = Sphere()
     for phase in range(0,6):
         s.gen_image(phase)
@@ -90,8 +90,9 @@ class Sphere(object):
         x, y = np.meshgrid(np.arange(self.dims[0]), np.arange(self.dims[1]))
 
         p_centroid = [0.5 * self.dims[0], 0.5 * self.dims[1], 0.0]
-        z = np.sqrt(self.r_planet ** 2 - (x - p_centroid[0]) ** 2
-                    - (y - p_centroid[1]) ** 2)
+        with np.errstate(invalid='ignore'):
+            z = np.sqrt(self.r_planet ** 2 - (x - p_centroid[0]) ** 2
+                        - (y - p_centroid[1]) ** 2)
 
         z[np.isnan(z)] = 0  # Convert NANs to zeros
 
