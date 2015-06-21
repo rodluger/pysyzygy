@@ -141,7 +141,7 @@ class Sphere(object):
         self.image_generated = True
         return self.image
 
-    def plot_image(self, show=False, cmap='Greys_r'):
+    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r'):
         '''
         Plot the image of the sphere. Return the figure and axis.
         '''
@@ -152,12 +152,13 @@ class Sphere(object):
         # Set off-planet background to transparent
         colormap.set_under(alpha=0)
 
-        fig, ax = plt.subplots(1, 1, frameon=False)
-        ax.patch.set_alpha(0)
+        if (fig is None) or (ax is None):
+            fig, ax = plt.subplots(1, 1, frameon=False)
+            ax.patch.set_alpha(0)
+            ax.set_aspect('equal')
+            ax.set(xticks=[], yticks=[])
+            ax.axis('off')
         ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1)
-        ax.set_aspect('equal')
-        ax.set(xticks=[], yticks=[])
-        ax.axis('off')
 
         if show:
             def format_coord(x, y):
