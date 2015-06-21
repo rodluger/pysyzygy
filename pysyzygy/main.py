@@ -12,12 +12,18 @@ Copyright Rodrigo Luger, May 2015.
 """
 
 import matplotlib.pyplot as pl
-import transit
 import numpy as np
 from scipy.optimize import newton
 import os, sys, subprocess
 G = 6.672e-8
 DAYSEC = 86400
+
+try:
+  import transit
+except ImportError:
+  raise ImportError('Failed to import the transit module. Did you compile the '
+                    'transit.f file? To do so, cd to pysyzygy/pysyzygy and '
+                    'run:\n\n    >>> f2py -c transit.f -m transit\n\n')
 
 __all__ = ['lightcurve', 'xy', 'plot', 'I', 'animate']
 
