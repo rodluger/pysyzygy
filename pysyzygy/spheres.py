@@ -9,10 +9,17 @@ To run a quick example, try:
         s.gen_image(phase)
         s.plot_image(show=True)
 
+or
+
+    from pysyzygy.spheres import Sphere
+    s = Sphere()
+    s.grid()
+
 """
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
+from PIL import Image, ImageOps, ImageDraw
 
 class Sphere(object):
     def __init__(self, albedo=1, resolution=1000, radius=450, orbitplane='xz'):
@@ -141,7 +148,7 @@ class Sphere(object):
         self.image_generated = True
         return self.image
 
-    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r'):
+    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r', image=None):
         '''
         Plot the image of the sphere. Return the figure and axis.
         '''
@@ -158,8 +165,37 @@ class Sphere(object):
             ax.set_aspect('equal')
             ax.set(xticks=[], yticks=[])
             ax.axis('off')
-        ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1)
-
+        
+        if image is None:
+          ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1)
+        else:
+        
+            # A black background with a mask
+            sz = self.dims[0]
+            dr = sz/2. - self.r_planet
+            bkg = Image.new('RGBA', (sz, sz), 'white')
+            bmk = Image.new('L', (sz, sz), 0)
+  
+            # The Lambertian mask
+            self.image[self.image < 0] = 0
+            mask = Image.fromarray((self.image*255).astype('uint8'))
+            for xi in np.arange(dr, sz-dr):
+              ym = np.sqrt((sz/2. - dr)**2 - (xi -  sz/2.)**2)
+              for yi in np.arange( sz/2. - ym, sz/2. + ym):
+                bkg.putpixel((int(xi),int(yi)), 0)
+                bmk.putpixel((int(xi),int(yi)), 255)
+  
+            # Plot the background
+            bkg.putalpha(bmk)
+            ax.imshow(bkg, origin='lower')
+  
+            # Overplot the alpha-corrected image
+            im = Image.open(image)
+            im = ImageOps.fit(im, mask.size)
+            im.putalpha(mask)
+            ax.imshow(im)
+        
+        
         if show:
             def format_coord(x, y):
                 '''
@@ -175,3 +211,28 @@ class Sphere(object):
             plt.show()
 
         return fig, ax
+    
+    def grid(self, n = 3, cmap='Greys_r', image=None):
+        '''
+        Plot a grid of all the phases of size n x n.
+        '''
+        fig, axes = plt.subplots(n, n, frameon=False)
+        try:
+          axes = axes.flatten()
+        except AttributeError:
+          axes = [axes]
+        phases = np.linspace(0,2*np.pi,n**2)
+        for ax, phase in zip(axes, phases):
+          ax.patch.set_alpha(0)
+          ax.set_aspect('equal')
+          ax.set(xticks=[], yticks=[])
+          ax.axis('off')
+          self.gen_image(phase)
+          self.plot_image(fig=fig, ax=ax, show=False, cmap=cmap, image=image)
+        plt.show()
+        
+        return fig, axes
+
+if __name__ == '__main__':
+  s = Sphere()
+  s.grid(n = 3) #, image='/Users/rod/Desktop/transit/earth.jpg')
