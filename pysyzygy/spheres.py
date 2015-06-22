@@ -22,7 +22,7 @@ import matplotlib.cm as cm
 from PIL import Image, ImageOps, ImageDraw
 
 class Sphere(object):
-    def __init__(self, albedo=1, resolution=1000, radius=450, orbitplane='xz'):
+    def __init__(self, albedo=1, resolution=1000, orbitplane='xz'):
         '''
         Parameters
         ----------
@@ -36,7 +36,7 @@ class Sphere(object):
 
         An instance of the sphere class
         '''
-        self.r_planet = radius
+        self.r_planet = int(0.45*resolution)
         self.dims = (resolution, resolution)
         self.plane = orbitplane
         self.albedo = albedo
@@ -169,27 +169,15 @@ class Sphere(object):
         if image is None:
           ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1)
         else:
-        
-            # A black background with a mask
-            sz = self.dims[0]
-            dr = sz/2. - self.r_planet
-            bkg = Image.new('RGBA', (sz, sz), 'white')
-            bmk = Image.new('L', (sz, sz), 0)
-  
-            # The Lambertian mask
-            self.image[self.image < 0] = 0
-            mask = Image.fromarray((self.image*255).astype('uint8'))
-            for xi in np.arange(dr, sz-dr):
-              ym = np.sqrt((sz/2. - dr)**2 - (xi -  sz/2.)**2)
-              for yi in np.arange( sz/2. - ym, sz/2. + ym):
-                bkg.putpixel((int(xi),int(yi)), 0)
-                bmk.putpixel((int(xi),int(yi)), 255)
-  
-            # Plot the background
-            bkg.putalpha(bmk)
-            ax.imshow(bkg, origin='lower')
+
+            # A black background
+            bkg = -np.ones(self.dims)
+            bkg[self.planet_disk] = 0
+            ax.imshow(bkg, origin='lower', cmap=colormap, vmin=0, vmax=1)
   
             # Overplot the alpha-corrected image
+            self.image[self.image < 0] = 0
+            mask = Image.fromarray((self.image*255).astype('uint8'))
             im = Image.open(image)
             im = ImageOps.fit(im, mask.size)
             im.putalpha(mask)
@@ -234,5 +222,5 @@ class Sphere(object):
         return fig, axes
 
 if __name__ == '__main__':
-  s = Sphere()
-  s.grid(n = 3) #, image='/Users/rod/Desktop/transit/earth.jpg')
+  s = Sphere(resolution=1000)
+  s.grid(n = 3, image='maps/earth.jpg')
