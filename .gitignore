@@ -3,3 +3,5 @@ transit.png
 pysyzygy/.DS_Store
 pysyzygy/transit.so
 *.pyc
+pysyzygy/*.png
+pysyzygy/*.gif

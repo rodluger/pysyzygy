@@ -171,7 +171,7 @@ def lightcurve(t, **kwargs):
   
   return flux
 
-def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
+def xyz(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
   '''
   Compute the sky-projected coordinates (x,y) of the orbit given an array of times 
   ``t``, the transit center time ``t0``, the stellar density ``rhos``, the mass ratio
@@ -194,6 +194,7 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
 
   x = np.zeros_like(t)                                                                # Sky-projected coordinates
   y = np.zeros_like(t)
+  z = np.zeros_like(t)                                                                # perp. to sky plane
   for j, ti in enumerate(t):
     M = 2*np.pi/per*(ti - t_peri)                                                     # Mean anomaly
     E = newton(diff, M, args = (e, M), fprime = der1, fprime2 = der2)                 # Eccentric anomaly
@@ -202,6 +203,7 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
     b = rRs*np.sqrt(1. - (np.sin(w + f)*sini)**2)                                     # Impact parameter
     
     x[j] = rRs*np.cos(w + f)
+    z[j] = rRs*np.sin(w + f)
     if (b**2 - x[j]**2) < 1e-10:                                                      # Prevent numerical error
       y[j] = 0.
     else:
@@ -212,8 +214,8 @@ def xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
     if (mask_star and (((x[j]**2 + y[j]**2) < 1.) and (y[j] > 0))):
       x[j] = np.nan                                                                   # These get masked when plotting
       y[j] = np.nan
-    
-  return x, y
+      z[j] = np.nan
+  return x, y, z
 
 def plot(**kwargs):
   '''
@@ -371,7 +373,7 @@ def plot(**kwargs):
 
   # Sky-projected motion
   t = np.linspace(-per/2,per/2,xypts)
-  x, y = xy(t, tN[0], rhos, MpMs, per, bcirc, esw, ecw)
+  x, y, _ = xyz(t, tN[0], rhos, MpMs, per, bcirc, esw, ecw)
   
   # The star
   r = np.linspace(0,1,100)
@@ -402,7 +404,7 @@ def plot(**kwargs):
     inset2 = fig.add_axes([0.925,0.1,0.2,0.15])
   pl.setp(inset2, xticks=[], yticks=[])
   t = np.linspace(-per/2,per/2,1000)
-  xp, yp = xy(t, tN[0], rhos, MpMs, per, aRs, esw, ecw)
+  xp, yp, _ = xyz(t, tN[0], rhos, MpMs, per, aRs, esw, ecw)
   inset2.plot(xp, yp, '-', color='DarkBlue', alpha=0.5)
   # Draw some invisible dots at the corners to set the window size
   xmin, xmax, ymin, ymax = np.nanmin(xp), np.nanmax(xp), np.nanmin(yp), np.nanmax(yp)

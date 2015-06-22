@@ -1,28 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 19 12:05:15 2014 by Brett Morris (bmorris3)
-
-To run a quick example, try:
-    from pysyzygy.spheres import Sphere
-    s = Sphere()
-    for phase in range(0,6):
-        s.gen_image(phase)
-        s.plot_image(show=True)
-
-or
-
-    from pysyzygy.spheres import Sphere
-    s = Sphere()
-    s.grid()
+Adapted from ``spheres.py`` by Brett Morris (bmorris3)
 
 """
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
-from PIL import Image, ImageOps, ImageDraw
+from PIL import Image, ImageOps
 
-class Sphere(object):
-    def __init__(self, albedo=1, resolution=1000, orbitplane='xz'):
+class Planet(object):
+    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1):
         '''
         Parameters
         ----------
@@ -34,11 +21,11 @@ class Sphere(object):
         Returns
         -------
 
-        An instance of the sphere class
+        An instance of the Planet class
         '''
         self.r_planet = int(0.45*resolution)
+        self.RpRs = RpRs
         self.dims = (resolution, resolution)
-        self.plane = orbitplane
         self.albedo = albedo
         self.image_generated = False
 
@@ -65,34 +52,26 @@ class Sphere(object):
         '''
         return a * np.dot(a, b) / self.normalize(a) ** 2
 
-    def gen_image(self, phaseangle=0):
+    def gen_image(self, xyz):
         '''
-        Generate the image of the sphere in the given phase angle. This method
+        Generate the image of the sphere at the given position. This method
         does most of the work.
 
         Parameters
         ----------
-        phaseangle : float
-            The phase angle between the star and the observer. Choose zero for
-            a "full" phase sphere, pi for a "new" phase sphere.
+        xyz : tuple
+            The position of the planet (x, y, z) relative to the star, in units
+            of the stellar radius. TODO: Resolve some sign errors here.
+            
         '''
-        self.phase_angle = phaseangle + np.pi / 2
         self.image = np.zeros(self.dims)
-
-        a = 1e6 * self.r_planet  # semi-major axis
-
-        if self.plane == 'xy':
-            s_centroid = [np.cos(self.phase_angle) * a,
-                          np.sin(self.phase_angle) * a, 0]
-        elif self.plane == 'yz':
-            s_centroid = [0, np.cos(self.phase_angle) * a,
-                          np.sin(self.phase_angle) * a]
-        elif self.plane == 'xz':
-            s_centroid = [np.cos(self.phase_angle) * a, 0,
-                          np.sin(self.phase_angle) * a]
-
-        self.observer = [0.5 * self.dims[0], 0.5 * self.dims[1],
-                         a]  # Observer must be in z direction
+        
+        # Position of the star. BUG: Why does a have to be so big?
+        a = 1e6*self.RpRs*self.r_planet
+        s_centroid = [-xyz[0]*a, xyz[1]*a, xyz[2]*a]
+        
+        # Observer must be in z direction, at infinity ( = one million! )
+        self.observer = [0.5 * self.dims[0], 0.5 * self.dims[1], 1e6*a]  
 
         x, y = np.meshgrid(np.arange(self.dims[0]), np.arange(self.dims[1]))
 
@@ -148,7 +127,7 @@ class Sphere(object):
         self.image_generated = True
         return self.image
 
-    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r', image=None):
+    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r', image=None, extent=None):
         '''
         Plot the image of the sphere. Return the figure and axis.
         '''
@@ -159,7 +138,7 @@ class Sphere(object):
         # Set off-planet background to transparent
         colormap.set_under(alpha=0)
 
-        if (fig is None) or (ax is None):
+        if ax is None:
             fig, ax = plt.subplots(1, 1, frameon=False)
             ax.patch.set_alpha(0)
             ax.set_aspect('equal')
@@ -167,13 +146,12 @@ class Sphere(object):
             ax.axis('off')
         
         if image is None:
-          ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1)
+            ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1, extent=extent)
         else:
-
             # A black background
             bkg = -np.ones(self.dims)
             bkg[self.planet_disk] = 0
-            ax.imshow(bkg, origin='lower', cmap=colormap, vmin=0, vmax=1)
+            ax.imshow(bkg, origin='lower', cmap=colormap, vmin=0, vmax=1, extent=extent)
   
             # Overplot the alpha-corrected image
             self.image[self.image < 0] = 0
@@ -181,8 +159,7 @@ class Sphere(object):
             im = Image.open(image)
             im = ImageOps.fit(im, mask.size)
             im.putalpha(mask)
-            ax.imshow(im)
-        
+            ax.imshow(im, extent=extent)
         
         if show:
             def format_coord(x, y):
@@ -198,29 +175,7 @@ class Sphere(object):
             ax.format_coord = format_coord
             plt.show()
 
-        return fig, ax
-    
-    def grid(self, n = 3, cmap='Greys_r', image=None):
-        '''
-        Plot a grid of all the phases of size n x n.
-        '''
-        fig, axes = plt.subplots(n, n, frameon=False)
-        try:
-          axes = axes.flatten()
-        except AttributeError:
-          axes = [axes]
-        phases = np.linspace(0,2*np.pi,n**2)
-        for ax, phase in zip(axes, phases):
-          ax.patch.set_alpha(0)
-          ax.set_aspect('equal')
-          ax.set(xticks=[], yticks=[])
-          ax.axis('off')
-          self.gen_image(phase)
-          self.plot_image(fig=fig, ax=ax, show=False, cmap=cmap, image=image)
-        plt.show()
-        
-        return fig, axes
-
-if __name__ == '__main__':
-  s = Sphere(resolution=1000)
-  s.grid(n = 3, image='maps/earth.jpg')
+        if fig is None:
+            return ax
+        else:
+            return fig, ax
