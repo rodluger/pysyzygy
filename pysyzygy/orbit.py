@@ -5,6 +5,7 @@ from matplotlib.colors import LinearSegmentedColormap, colorConverter
 import subprocess
 import planet
 from main import xyz
+from PIL import Image
 
 def I(r, u1, u2):
   '''
@@ -14,16 +15,10 @@ def I(r, u1, u2):
   
   return (1-u1*(1-np.sqrt(1-r**2))-u2*(1-np.sqrt(1-r**2))**2)/(1-u1/3-u2/6)/np.pi
   
-def Star(ax, u1=1, u2=0, x=0, y=0, r=1, n=100, color=(1.0, 0.85, 0.1), behind=True):
+def Star(ax, u1=1, u2=0, x=0, y=0, r=1, n=100, color=(1.0, 0.85, 0.1), zorder=-1):
   '''
   
   '''
-  
-  # Get ordering correct
-  if behind:
-    zorder = 0
-  else:
-    zorder = 99
     
   # Ensure RGB
   color = colorConverter.to_rgb(color)
@@ -72,13 +67,24 @@ def Trail(ax, x, y, z, f, r = 0.05, ndots = 200, color = "#4682b4"):
   for i in range(f - ndots, f):
     alpha = min(1.0, 2.0/(f - i))
     if z[i] < z[f]:
-      trail = pl.Circle((x[i], y[i]), r, color=color, zorder = 99, alpha = alpha)
+      if z[i] < 0:
+        # In front of planet and star
+        zorder = 3
+      else:
+        # In front of planet, behind star
+        zorder = 1
     else:
-      trail = pl.Circle((x[i], y[i]), r, color=color, zorder = 0, alpha = alpha)
+      if z[i] < 0:
+        # Behind planet, in front of star
+        zorder = -1
+      else:
+        # Behind planet and star
+        zorder = -3
+    trail = pl.Circle((x[i], y[i]), r, color=color, zorder = -2, alpha = alpha)
     ax.add_artist(trail)
 
 def Plot(t=0., t0=0., rhos=0.5, RpRs=0.25, MpMs=0.01, per=1., bcirc=0.5, 
-         esw=0., ecw=0., u1=1, u2=0, rot=0., bkgcolor = 'white'):
+         esw=0., ecw=0., u1=1, u2=0, rot=0., bkgcolor = 'white', bkgimage = None):
   '''
   
   '''
@@ -93,25 +99,29 @@ def Plot(t=0., t0=0., rhos=0.5, RpRs=0.25, MpMs=0.01, per=1., bcirc=0.5,
   ax.yaxis.set_visible(False)
   ax.set_aspect('equal')
   ax.patch.set_facecolor(bkgcolor)
-  if z < 0: behind = True
-  else: behind = False
-  Star(ax, u1 = u1, u2 = u2, behind = behind)
+  if z[0] < 0: 
+    zorder = -2
+  else: 
+    zorder = 2
+  Star(ax, u1 = u1, u2 = u2, zorder = zorder)
   Planet(ax, x = x[0], y = y[0], z = z[0], r = RpRs, rot = rot)
   
   return fig, ax
 
-def Animate(nsteps = 1000, dpy = 4, trail = True):
+def Animate(t0=0., rhos=0.5, RpRs=0.25, MpMs=0.01, per=1., bcirc=0.5, 
+         esw=0., ecw=0., u1=1, u2=0, rot=0., bkgcolor = 'white', bkgimage = None,
+         nsteps = 1000, dpy = 4, trail = True):
   '''
   Note that dpy (= days_per_year) can be set negative for retrograde rotation
   
   '''
-
+  subprocess.call(['mkdir', '-p', 'tmp'])
   frames = range(nsteps)
   rotation = np.linspace(0, -dpy, nsteps) % 1
-  x, y, z = xyz(np.linspace(-0.5,0.5,nsteps), 0, 0.5, 0.01, 1., 2., 0., 0., 
-                mask_star = False)
-
+  x, y, z = xyz(np.linspace(-per/2.,per/2.,nsteps), t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = False)
+  
   for f, rot in zip(frames, rotation):
+    
     fig = pl.figure()
     ax = pl.subplot(111)
     ax.set_xlim(-3.5,3.5)
@@ -119,21 +129,26 @@ def Animate(nsteps = 1000, dpy = 4, trail = True):
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax.set_aspect('equal')
-    if (nsteps/4. < f < 3*nsteps/4.):
-      Star(ax, u1 = 0.5, u2 = 0.25, behind = True)
-    else:
-      Star(ax, u1 = 0.5, u2 = 0.25, behind = False)
-    
-    if trail:
-      Trail(ax, x, y, z, f)
-    Planet(ax, x = x[f], y = y[f], z = z[f], rot = rot)
+    if z[f] < 0: 
+      zorder = -1
+    else: 
+      zorder = 1
+    Star(ax, u1 = u1, u2 = u2, zorder = zorder)
+    Planet(ax, x = x[f], y = y[f], z = z[f], r = RpRs, rot = rot)
+    if trail: Trail(ax, x, y, z, f)
 
-    fig.savefig('%03d.png' % f, bbox_inches = 'tight')
+    if bkgimage is not None:
+      im = Image.open(bkgimage)
+      ax.imshow(im, extent=(-3.5,3.5,-3,3), zorder=-99)
+    else:
+      ax.patch.set_facecolor(bkgcolor)
+
+    fig.savefig('tmp/%03d.png' % f, bbox_inches = 'tight')
     pl.close()
   
   # Make gif
-  subprocess.call(['convert', '-delay', '5', '-loop', '-1', '*.png', 'transit.gif'])
+  subprocess.call(['convert', '-delay', '5', '-loop', '-1', 'tmp/*.png', 'transit.gif'])
 
 if __name__ == '__main__':
-  fig, ax = Plot(t = 0.4, bkgcolor='k')
-  pl.show()
+  Animate(bkgcolor='k', nsteps=1000, bkgimage='maps/stars.jpg')
+  subprocess.call(['rm', '-r', 'tmp'])
