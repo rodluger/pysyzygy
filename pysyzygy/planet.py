@@ -7,9 +7,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 from PIL import Image, ImageOps
+import proj
 
 class Planet(object):
-    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1):
+    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1, image_map='maps/earth.jpg', night_alpha = 0.25):
         '''
         Parameters
         ----------
@@ -28,6 +29,8 @@ class Planet(object):
         self.dims = (resolution, resolution)
         self.albedo = albedo
         self.image_generated = False
+        self.image_map = image_map
+        self.night_alpha = night_alpha
 
     def vector_length(self, vector):
         '''
@@ -127,7 +130,7 @@ class Planet(object):
         self.image_generated = True
         return self.image
 
-    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r', image=None, extent=None):
+    def plot_image(self, fig=None, ax=None, show=False, cmap='Greys_r', extent=None, long0=0.):
         '''
         Plot the image of the sphere. Return the figure and axis.
         '''
@@ -145,7 +148,7 @@ class Planet(object):
             ax.set(xticks=[], yticks=[])
             ax.axis('off')
         
-        if image is None:
+        if self.image_map is None:
             ax.imshow(self.image, origin='lower', cmap=colormap, vmin=0, vmax=1, extent=extent)
         else:
             # A black background
@@ -153,11 +156,23 @@ class Planet(object):
             bkg[self.planet_disk] = 0
             ax.imshow(bkg, origin='lower', cmap=colormap, vmin=0, vmax=1, extent=extent)
   
-            # Overplot the alpha-corrected image
-            self.image[self.image < 0] = 0
+            # 
+            #self.image[(self.image < self.night_alpha) & (self.image >= 0)] = self.night_alpha
+            #self.image[self.image < 0] = 0
+            
+            self.image[self.image < 0] = np.nan
+            self.image = (1. - self.night_alpha)*self.image + self.night_alpha
+            self.image[np.isnan(self.image)] = 0
+            
             mask = Image.fromarray((self.image*255).astype('uint8'))
-            im = Image.open(image)
+            im = Image.open(self.image_map)
+            
+            # Project onto a sphere
+            sp = proj.SphericalProjection(im)
+            im = sp.render(long0=long0)
             im = ImageOps.fit(im, mask.size)
+            
+            # Add the alpha mask
             im.putalpha(mask)
             ax.imshow(im, extent=extent)
         
