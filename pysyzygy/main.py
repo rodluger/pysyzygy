@@ -25,7 +25,7 @@ except ImportError:
                     'transit.f file? To do so, cd to pysyzygy/pysyzygy and '
                     'run:\n\n    >>> f2py -c transit.f -m transit\n\n')
 
-__all__ = ['lightcurve', 'xy', 'plot', 'I', 'animate']
+__all__ = ['lightcurve', 'xyz', 'plot', 'I', 'animate']
 
 def transit_times(tstart, tstop, t0, per, tdur):
   '''

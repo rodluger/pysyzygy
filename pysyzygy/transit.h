@@ -1,0 +1,136 @@
+#include <stdio.h>
+#include <math.h>
+
+// Models
+#define QUADRATIC               0
+#define KIPPING                 1
+#define NONLINEAR               2
+#define ECCENTRIC               3
+#define CIRCULAR                4
+#define RIEMANN                 5
+#define TRAPEZOID               6
+
+// Errors
+#define ERR_NONE                0                                                     // We're good!
+#define ERR_NOT_IMPLEMENTED     1                                                     // Function/option not yet implemented
+#define ERR_MAX_PTS             2                                                     // Maximum number of points exceeded in transit. Increase settings.maxpts.
+#define ERR_KEPLER              3                                                     // Error in the Kepler solver; probably didn't converge
+#define ERR_NO_TRANSIT          4                                                     // The planet doesn't transit the star
+#define ERR_BAD_ECC             5                                                     // Bad value for eccentricity
+#define ERR_RC                  6                                                     // Error in rc() function
+#define ERR_RJ                  7                                                     // Error in rj() function
+#define ERR_RF                  8                                                     // Error in rf() function
+#define ERR_RADIUS              9                                                     // Bad input radius
+#define ERR_EXP_PTS             10                                                    // The number of exposure points cannot be odd
+#define ERR_NOT_COMPUTED        11                                                    // User attempted to bin before computing
+
+// Numerical
+static double sqrarg;
+#define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
+static double dmaxarg1, dmaxarg2;
+#define DMAX(a,b) (dmaxarg1=(a),dmaxarg2=(b),(dmaxarg1) > (dmaxarg2) ?\
+                  (dmaxarg1) : (dmaxarg2))
+static double dminarg1, dminarg2;
+#define DMIN(a,b) (dminarg1=(a),dminarg2=(b),(dminarg1) < (dminarg2) ?\
+                  (dminarg1) : (dminarg2))
+#define RC_ERRTOL 0.04   
+#define RC_TINY 1.69e-38   
+#define RC_SQRTNY 1.3e-19   
+#define RC_BIG 3.e37   
+#define RC_TNBG (RC_TINY*RC_BIG)   
+#define RC_COMP1 (2.236/RC_SQRTNY)   
+#define RC_COMP2 (RC_TNBG*RC_TNBG/25.0)   
+#define RC_THIRD (1.0/3.0)   
+#define RC_C1 0.3   
+#define RC_C2 (1.0/7.0)   
+#define RC_C3 0.375   
+#define RC_C4 (9.0/22.0)
+#define RJ_ERRTOL 0.05   
+#define RJ_TINY 2.5e-13   
+#define RJ_BIG 9.0e11   
+#define RJ_C1 (3.0/14.0)   
+#define RJ_C2 (1.0/3.0)   
+#define RJ_C3 (3.0/22.0)   
+#define RJ_C4 (3.0/26.0)   
+#define RJ_C5 (0.75*RJ_C3)   
+#define RJ_C6 (1.5*RJ_C4)   
+#define RJ_C7 (0.5*RJ_C2)   
+#define RJ_C8 (RJ_C3+RJ_C3)   
+#define RF_ERRTOL 0.08   
+#define RF_TINY 1.5e-38   
+#define RF_BIG 3.0e37   
+#define RF_THIRD (1.0/3.0)   
+#define RF_C1 (1.0/24.0)   
+#define RF_C2 0.1   
+#define RF_C3 (3.0/44.0)   
+#define RF_C4 (1.0/14.0) 
+
+// Constants
+#define PI                      acos(-1.)
+#define G                       6.672e-8
+#define DAYSEC                  86400.
+
+// Structs
+typedef struct {
+  int model;
+  double bcirc;
+  double rhos;
+  double MpMs;
+  double esw;
+  double ecw;
+  double per;
+  double RpRs;
+} TRANSIT;
+
+typedef struct {
+  int model;
+  double u1;
+  double u2;
+  double q1;
+  double q2;
+  double c1;
+  double c2;
+  double c3;
+  double c4;
+} LIMBDARK;
+
+typedef struct {
+  int npts;
+  int ipts;
+  double *time;
+  double *flux;
+  double *bflx;
+  double *iflx;
+  double *M;
+  double *E;
+  double *f;
+  double *r;
+  double *x;
+  double *y;
+  double *z;
+  double *b;
+} ARRAYS;
+
+typedef struct {
+  double exptime;
+  double keptol;
+  int maxpts;
+  int exppts;
+  int binmethod;
+  int maxkepiter;
+  int computed;
+  int binned;
+} SETTINGS;
+
+// Functions
+double ellec(double k);
+double ellk(double k);
+double rc(double x, double y, int *err);
+double rj(double x, double y, double z, double p, int *err);
+double rf(double x, double y, double z, int *err);
+double sgn(double x);
+double TrueAnomaly(double E, double ecc);
+double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter);
+int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
+int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
+int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
