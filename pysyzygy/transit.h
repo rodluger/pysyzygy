@@ -9,6 +9,8 @@
 #define CIRCULAR                4
 #define RIEMANN                 5
 #define TRAPEZOID               6
+#define SMARTINT                7
+#define SLOWINT                 8
 
 // Errors
 #define ERR_NONE                0                                                     // We're good!
@@ -23,6 +25,7 @@
 #define ERR_RADIUS              9                                                     // Bad input radius
 #define ERR_EXP_PTS             10                                                    // The number of exposure points cannot be odd
 #define ERR_NOT_COMPUTED        11                                                    // User attempted to bin before computing
+#define ERR_STAR_CROSS          12                                                    // Star-crossing orbit
 
 // Numerical
 static double sqrarg;
@@ -69,6 +72,11 @@ static double dminarg1, dminarg2;
 #define PI                      acos(-1.)
 #define G                       6.672e-8
 #define DAYSEC                  86400.
+#define KEPLONGEXP              (1765.5/86400.)
+#define KEPLONGCAD              (1800./86400.)
+#define KEPSHRTEXP              (58.89/86400.)
+#define KEPSHRTCAD              (60./86400.)
+#define MAXTRANSITS             500
 
 // Structs
 typedef struct {
@@ -80,6 +88,9 @@ typedef struct {
   double ecw;
   double per;
   double RpRs;
+  double t0;
+  int ntrans;
+  double tN[MAXTRANSITS];
 } TRANSIT;
 
 typedef struct {
@@ -112,11 +123,13 @@ typedef struct {
 } ARRAYS;
 
 typedef struct {
+  double cadence;
   double exptime;
   double keptol;
   int maxpts;
   int exppts;
   int binmethod;
+  int intmethod;
   int maxkepiter;
   int computed;
   int binned;

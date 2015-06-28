@@ -155,8 +155,8 @@ def Animate(t0=0., rhos=0.5, RpRs=0.25, MpMs=0.01, per=1., bcirc=0.5,
 
 if __name__ == '__main__':
   
-  #fig, ax = Plot(t = 0.4, RpRs = 0.75, long0 = -90.)
-  #pl.show()
+  fig, ax = Plot(t = 0.2, RpRs = 0.75, long0 = -90.)
+  pl.show()
   
-  Animate(bkgcolor='k', nsteps=1000, bkgimage = 'maps/stars.jpg', RpRs = 0.5)
-  subprocess.call(['rm', '-r', 'tmp'])
+  #Animate(bkgcolor='k', nsteps=1000, bkgimage = 'maps/stars.jpg', RpRs = 0.5)
+  #subprocess.call(['rm', '-r', 'tmp'])

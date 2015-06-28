@@ -10,7 +10,7 @@ from PIL import Image, ImageOps
 import proj
 
 class Planet(object):
-    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1, image_map='maps/earth.jpg', night_alpha = 0.25):
+    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1, image_map='maps/earth.jpg', night_alpha = 0.35):
         '''
         Parameters
         ----------
@@ -155,11 +155,7 @@ class Planet(object):
             bkg = -np.ones(self.dims)
             bkg[self.planet_disk] = 0
             ax.imshow(bkg, origin='lower', cmap=colormap, vmin=0, vmax=1, extent=extent)
-  
-            # 
-            #self.image[(self.image < self.night_alpha) & (self.image >= 0)] = self.night_alpha
-            #self.image[self.image < 0] = 0
-            
+              
             self.image[self.image < 0] = np.nan
             self.image = (1. - self.night_alpha)*self.image + self.night_alpha
             self.image[np.isnan(self.image)] = 0

@@ -1,3 +1,8 @@
+# TODO: Compare kernel posteriors with and without chunking
+# TODO: KOI 142 -> TTVs on the order of 1 day, eccentric -> transit shape changes!
+# TODO: Model synthetic PLD noise subtraction; does it oversubtract the white noise?
+# TODO: Interpolate orbit arrays?
+
 # MAC:
 # >>> gcc -fPIC -c transit.c
 # >>> gcc -shared -Wl,-install_name,transit_mac.so -o transit_mac.so transit.o -lc
@@ -13,14 +18,41 @@ import numpy as np
 from numpy.ctypeslib import ndpointer, as_ctypes
 import platform
 
+# Define errors
+ERR_NONE             =   0                                                            # We're good!
+ERR_NOT_IMPLEMENTED  =   1                                                            # Function/option not yet implemented
+ERR_MAX_PTS          =   2                                                            # Maximum number of points exceeded in transit. Increase settings.maxpts.
+ERR_KEPLER           =   3                                                            # Error in the Kepler solver; probably didn't converge
+ERR_NO_TRANSIT       =   4                                                            # The planet doesn't transit the star
+ERR_BAD_ECC          =   5                                                            # Bad value for eccentricity
+ERR_RC               =   6                                                            # Error in rc() function
+ERR_RJ               =   7                                                            # Error in rj() function
+ERR_RF               =   8                                                            # Error in rf() function
+ERR_RADIUS           =   9                                                            # Bad input radius
+ERR_EXP_PTS          =   10                                                           # The number of exposure points cannot be odd
+ERR_NOT_COMPUTED     =   11                                                           # User attempted to bin before computing
+ERR_STAR_CROSS       =   12                                                           # Star-crossing orbit
+
 # Define models
-QUADRATIC =              0
-KIPPING   =              1
-NONLINEAR =              2
-ECCENTRIC =              3
-CIRCULAR  =              4
-RIEMANN   =              5
-TRAPEZOID =              6
+QUADRATIC  =              0
+KIPPING    =              1
+NONLINEAR  =              2
+ECCENTRIC  =              3
+CIRCULAR   =              4
+RIEMANN    =              5
+TRAPEZOID  =              6
+SMARTINT   =              7
+SLOWINT    =              8
+
+# Cadences
+KEPLONGEXP =              (1765.5/86400.)
+KEPLONGCAD =              (1800./86400.)
+KEPSHRTEXP =              (58.89/86400.)
+KEPSHRTCAD =              (60./86400.)
+
+# Other
+MAXTRANSITS =             500
+TRANSITSARR =             ctypes.c_double * MAXTRANSITS
 
 class TRANSIT(ctypes.Structure):
       _fields_ = [("model", ctypes.c_int),
@@ -30,7 +62,10 @@ class TRANSIT(ctypes.Structure):
                   ("esw", ctypes.c_double),
                   ("ecw", ctypes.c_double),
                   ("per", ctypes.c_double),
-                  ("RpRs", ctypes.c_double)]
+                  ("RpRs", ctypes.c_double),
+                  ("t0", ctypes.c_double),
+                  ("ntrans", ctypes.c_int),
+                  ("_tN", TRANSITSARR)]
       
       def __init__(self, **kwargs):
         self.model = kwargs.get('model', ECCENTRIC)
@@ -41,6 +76,21 @@ class TRANSIT(ctypes.Structure):
         self.ecw = kwargs.get('ecw', 0.)
         self.per = kwargs.get('per', 1.)
         self.RpRs = kwargs.get('RpRs', 0.1)
+        self.t0 = kwargs.get('t0', 0.)
+        self._tN_p = kwargs.get('tN', [])                                             # The transit times. NOTE: Must be sorted!
+        self._tN = TRANSITSARR(*self._tN_p)
+        self.ntrans = len(self._tN_p)                                                 # Number of transits; only used if tN is set (i.e., for TTVs)
+      
+      @property
+      def tN(self):
+        return self._tN_p                                                             # The python-friendly list/array of transit times
+
+      @tN.setter
+      def tN(self, value):
+        self._tN_p = value
+        self.ntrans = len(self._tN_p)
+        self._tN = TRANSITSARR(*self._tN_p)                                           # The pointer version that gets passed to C
+      
       
 class LIMBDARK(ctypes.Structure):
       _fields_ = [("model", ctypes.c_int),
@@ -134,20 +184,24 @@ class ARRAYS(ctypes.Structure):
         return np.array([self._b[i] for i in range(self.npts)])
        
 class SETTINGS(ctypes.Structure):
-      _fields_ = [("exptime", ctypes.c_double),
+      _fields_ = [("cadence", ctypes.c_double),
+                  ("exptime", ctypes.c_double),
                   ("keptol", ctypes.c_double),
                   ("maxpts", ctypes.c_int),
                   ("exppts", ctypes.c_int),
                   ("binmethod", ctypes.c_int),
+                  ("intmethod", ctypes.c_int),
                   ("maxkepiter", ctypes.c_int),
                   ("computed", ctypes.c_int),
                   ("binned", ctypes.c_int)]
       
       def __init__(self, **kwargs):
-        self.exptime = kwargs.get('exptime', 1765.5/86400)                            # Long cadence
-        self.maxpts = kwargs.get('maxpts', 10000)                                     # Maximum length of arrays
-        self.exppts = kwargs.get('exppts', 10)                                        # Average flux over 10 points for binning
+        self.cadence = kwargs.get('cadence', KEPLONGCAD)                              # Long cadence dt
+        self.exptime = kwargs.get('exptime', KEPLONGEXP)                              # Long cadence integration time
+        self.exppts = kwargs.get('exppts', 500)                                        # Average flux over 10 points for binning
+        self.maxpts = kwargs.get('maxpts', 10000)                                     # Maximum length of arrays ( > exp_pts * transit duration / exptime )
         self.binmethod = kwargs.get('binmethod', RIEMANN)                             # How to integrate when binning?
+        self.intmethod = kwargs.get('intmethod', SMARTINT)                            # Integration method
         self.keptol = kwargs.get('keptol', 1.e-15)                                    # Kepler solver tolerance
         self.maxkepiter = kwargs.get('maxkepiter', 100)                               # Maximum number of iterations in Kepler solver
         self.computed = 0
@@ -222,14 +276,15 @@ if __name__ == '__main__':
   def PlotInterpolation():  
     arr = ARRAYS()
     limbdark = LIMBDARK()
-    transit = TRANSIT(ecw = 0.01, esw = 0.01, bcirc = 0.5, RpRs = 0.1, per = 5.0)
+    transit = TRANSIT(ecw = 0., esw = 0., bcirc = 0., RpRs = 0.1, per = 1.3)
     settings = SETTINGS()
-  
-    ipts = 100
-    t = np.linspace(-0.1,0.1,ipts)
-    Interpolate(t, ipts, transit, limbdark, settings, arr)
-    pl.plot(t, arr.iflx, 'b.')
-  
+
+    t = np.arange(-2.5,2.5,KEPLONGCAD)
+    t += 0.001 * np.random.randn(len(t))
+    
+    Interpolate(t, len(t), transit, limbdark, settings, arr)
+    pl.plot(t, arr.iflx, 'r.')
+    
     pl.show()
   
   PlotInterpolation()

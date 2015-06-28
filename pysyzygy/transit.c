@@ -3,6 +3,13 @@
 #include <math.h>
 #include "transit.h"
  
+double modulus(double x, double y) {
+  /*
+      The arithmetic modulus, x mod y
+  */
+  return x - y * floor(x / y);
+} 
+ 
 double ellec(double k) {
   /*
       Computes polynomial approximation for the complete elliptic
@@ -294,13 +301,14 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       if (E[i] == -1) return ERR_KEPLER;
       f[i] = TrueAnomaly(E[i], ecc);                                                  // True anomaly
       r[i] = aRs * (1. - ecc * ecc)/(1. + ecc * cos(f[i]));                           // Star-planet separation in units of stellar radius
+      if (r[i] - RpRs < 1.) return ERR_STAR_CROSS;                                    // Star-crossing orbit!
       b[i] = r[i] * sqrt(1. - pow(sin(w + f[i]) * sin(inc), 2.));                     // Instantaneous impact parameter                                   
       x[i] = r[i] * cos(w + f[i]);                                                    // Cartesian sky-projected coordinates
       z[i] = r[i] * sin(w + f[i]);
       if (b[i] * b[i] - x[i] * x[i] < 1.e-10) 
         y[i] = 0.;                                                                    // Prevent numerical errors
       else {
-        tmp = fmod(f[i] + w + 2 * PI, 2 * PI);                                        // TODO: Clean this up a bit
+        tmp = modulus(f[i] + w, 2 * PI);                                              // TODO: Verify this modulus
         y[i] = sqrt(b[i] * b[i] - x[i] * x[i]);
         if (!((0 < tmp) && (tmp < PI))) y[i] *= -1;
       }
@@ -449,7 +457,7 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
       arr->bflx[i] = arr->bflx[i - 1] + 1. / (2 * ep) * (2. - 
                      arr->flux[i - hx] - arr->flux[i - hx -1]);
     
-  } else if (settings->binmethod == -1) {                                             // DEBUG: This is the old trapezoid routine
+  } else if (settings->binmethod == -1) {                                             // DEBUG: This is the old trapezoid routine. Use for testing only
     arr->bflx[0] = 1. + 0.5 / ep * (arr->flux[hx] - 1.);                              // Set the leftmost bin
 
     for (i = 1; i < hx + 1; i++) {
@@ -488,8 +496,8 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
 int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark, 
                 SETTINGS *settings, ARRAYS *arr) {
   
-  double f1, f0, t1, t0;
-  int i, j;
+  double f1, f0, t1, t0, ti;
+  int i, j, nt;
   int iErr = ERR_NONE;
   
   if (!settings->computed) {
@@ -501,25 +509,59 @@ int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark,
     if (iErr != ERR_NONE) return iErr;
   }
   
-  arr->iflx = malloc(ipts*sizeof(double));                                            // The interpolated flux array
+  arr->iflx = malloc(ipts*sizeof(double));                                            // The interpolated flux array  
   
-  j = 0;
+  j = 0;                                                                              // The interpolation index
+  nt = 0;                                                                             // The transit number
+  transit->tN[transit->ntrans] = HUGE;                                                // A bit of a hack, but essential to get the last transit right below
+    
   for (i = 0; i < ipts; i++) {
-  
-    if ((t[i] < arr->time[0]) || (t[i] >= arr->time[arr->npts-1])) {                  // The case t[i] == arr->time[arr->npts] is pathological,
+    
+    if (!(transit->ntrans))
+      ti = modulus(t[i]-transit->t0-transit->per/2., transit->per) - transit->per/2.; // Find the folded time, assuming strict periodicity
+    else {
+      for (; nt < transit->ntrans; nt++) {                                            // Find the folded time given all of the transit times
+        if (fabs(t[i] - transit->tN[nt]) < fabs(t[i] - transit->tN[nt + 1])) {
+          ti = t[i] - transit->tN[nt];
+          break;
+        }
+      }
+    }
+    
+    if ((ti < arr->time[0]) || (ti >= arr->time[arr->npts-1])) {                      // The case ti == arr->time[arr->npts] is pathological,
       arr->iflx[i] = 1.;                                                              // but we're technically overestimating the flux slightly
       continue;                                                                       // in the zero-probability event that this does occur
     }
-
-    for (; j < arr->npts; j++) 
-      if (arr->time[j + 1] > t[i]) break;
+                                                                                      
+    // Now we find [j, j + 1], the indices bounding the data point
     
-    t0 = arr->time[j];
+    if (settings->intmethod == SMARTINT) {                                            // Increment j intelligently. NOTE: time array must be sorted!
+      if (j > 0) j += settings->exppts * (t[i] - t[i - 1])/settings->cadence;         
+      j = j % arr->npts;
+      
+      if (arr->time[j + 1] <= ti) {                                                   // We undershot; let's loop until we get the right index
+        for (; j < arr->npts - 1; j++) {
+          if (arr->time[j + 1] > ti) break;
+        }
+      } else {                                                                        // We either overshot or got it right
+        for (; j >= 0; j--) {
+          if (arr->time[j] < ti) break;
+        }
+      }
+    } else if (settings->intmethod == SLOWINT) {                                      // Brain-dead slow interpolation, useful if time array isn't sorted
+      for (j = 0; j < arr->npts - 1; j++) {
+        if (arr->time[j + 1] > ti) break;
+      }
+    } else {
+      return ERR_NOT_IMPLEMENTED;
+    }
+    
+    t0 = arr->time[j];                                                                // Interpolation bounds
     t1 = arr->time[j + 1];
     f0 = arr->bflx[j];
     f1 = arr->bflx[j + 1];
   
-    arr->iflx[i] = f0 + (f1 - f0) * (t[i] - t0) / (t1 - t0);
+    arr->iflx[i] = f0 + (f1 - f0) * (ti - t0) / (t1 - t0);                            // A simple linear interpolation
     
   }
   
