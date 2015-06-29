@@ -5,8 +5,6 @@
 #define QUADRATIC               0
 #define KIPPING                 1
 #define NONLINEAR               2
-#define ECCENTRIC               3
-#define CIRCULAR                4
 #define RIEMANN                 5
 #define TRAPEZOID               6
 #define SMARTINT                7
@@ -26,6 +24,11 @@
 #define ERR_EXP_PTS             10                                                    // The number of exposure points cannot be odd
 #define ERR_NOT_COMPUTED        11                                                    // User attempted to bin before computing
 #define ERR_STAR_CROSS          12                                                    // Star-crossing orbit
+#define ERR_PER                 13                                                    // Bad period
+#define ERR_RHOS_ARS            14                                                    // Must specify either rhos or aRs!
+#define ERR_RHOS                15                                                    // Bad rhos
+#define ERR_ECC_W               16                                                    // Bad eccentricity/omega
+#define ERR_LD                  17                                                    // Bad limb darkening coeffs
 
 // Arrays
 #define ARR_FLUX                0
@@ -92,7 +95,6 @@ static double dminarg1, dminarg2;
 
 // Structs
 typedef struct {
-  int model;
   double bcirc;
   double rhos;
   double MpMs;
@@ -101,6 +103,9 @@ typedef struct {
   double per;
   double RpRs;
   double t0;
+  double ecc;
+  double w;
+  double aRs;
   int ntrans;
   double tN[MAXTRANSITS];
 } TRANSIT;

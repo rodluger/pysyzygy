@@ -29,13 +29,16 @@ ERR_RADIUS           =   9                                                      
 ERR_EXP_PTS          =   10                                                           # The number of exposure points cannot be odd
 ERR_NOT_COMPUTED     =   11                                                           # User attempted to bin before computing
 ERR_STAR_CROSS       =   12                                                           # Star-crossing orbit
+ERR_PER              =   13                                                           # Bad period
+ERR_RHOS_ARS         =   14                                                           # Must specify either rhos or aRs!
+ERR_RHOS             =   15                                                           # Bad rhos
+ERR_ECC_W            =   16                                                           # Bad eccentricity/omega
+ERR_LD               =   17                                                           # Bad limb darkening coeffs
 
 # Define models
 QUADRATIC  =              0
 KIPPING    =              1
 NONLINEAR  =              2
-ECCENTRIC  =              3
-CIRCULAR   =              4
 RIEMANN    =              5
 TRAPEZOID  =              6
 SMARTINT   =              7
@@ -62,10 +65,11 @@ ARR_B       =             9
 # Other
 MAXTRANSITS =             500
 TRANSITSARR =             ctypes.c_double * MAXTRANSITS
+G           =             6.672e-8
+DAYSEC      =             86400.
 
 class TRANSIT(ctypes.Structure):
-      _fields_ = [("model", ctypes.c_int),
-                  ("bcirc", ctypes.c_double),
+      _fields_ = [("bcirc", ctypes.c_double),
                   ("rhos", ctypes.c_double),
                   ("MpMs", ctypes.c_double),
                   ("esw", ctypes.c_double),
@@ -73,19 +77,26 @@ class TRANSIT(ctypes.Structure):
                   ("per", ctypes.c_double),
                   ("RpRs", ctypes.c_double),
                   ("t0", ctypes.c_double),
+                  ("ecc", ctypes.c_double),
+                  ("w", ctypes.c_double),
+                  ("aRs", ctypes.c_double),
                   ("ntrans", ctypes.c_int),
                   ("_tN", TRANSITSARR)]
       
       def __init__(self, **kwargs):
-        self.model = kwargs.pop('model', ECCENTRIC)
-        self.bcirc = kwargs.pop('bcirc', 0.)
-        self.rhos = kwargs.pop('rhos', 1.)
-        self.MpMs = kwargs.pop('MpMs', 0.)
-        self.esw = kwargs.pop('esw', 0.)
-        self.ecw = kwargs.pop('ecw', 0.)
-        self.per = kwargs.pop('per', 1.)
-        self.RpRs = kwargs.pop('RpRs', 0.1)
-        self.t0 = kwargs.pop('t0', 0.)
+        self.bcirc = kwargs.pop('bcirc', np.nan)
+        b = kwargs.pop('b', None)
+        if b is not None: self.bcirc = b
+        self.rhos = kwargs.pop('rhos', np.nan)
+        self.MpMs = kwargs.pop('MpMs', np.nan)
+        self.esw = kwargs.pop('esw', np.nan)
+        self.ecw = kwargs.pop('ecw', np.nan)
+        self.per = kwargs.pop('per', np.nan)
+        self.RpRs = kwargs.pop('RpRs', np.nan)
+        self.t0 = kwargs.pop('t0', np.nan)
+        self.ecc = kwargs.pop('ecc', np.nan)
+        self.w = kwargs.pop('w', np.nan)
+        self.aRs = kwargs.pop('aRs', np.nan)
         self._tN_p = kwargs.pop('tN', [])                                             # The transit times. NOTE: Must be sorted!
         self._tN = TRANSITSARR(*self._tN_p)
         self.ntrans = len(self._tN_p)                                                 # Number of transits; only used if tN is set (i.e., for TTVs)
@@ -114,14 +125,14 @@ class LIMBDARK(ctypes.Structure):
                   
       def __init__(self, **kwargs):
         self.ldmodel = kwargs.pop('ldmodel', QUADRATIC)
-        self.u1 = kwargs.pop('u1', 1.)
-        self.u2 = kwargs.pop('u2', 0.)
-        self.q1 = kwargs.pop('q1', 0.)
-        self.q2 = kwargs.pop('q2', 0.)
-        self.c1 = kwargs.pop('c1', 0.)
-        self.c2 = kwargs.pop('c2', 0.)
-        self.c3 = kwargs.pop('c3', 0.)
-        self.c4 = kwargs.pop('c4', 0.)
+        self.u1 = kwargs.pop('u1', np.nan)
+        self.u2 = kwargs.pop('u2', np.nan)
+        self.q1 = kwargs.pop('q1', np.nan)
+        self.q2 = kwargs.pop('q2', np.nan)
+        self.c1 = kwargs.pop('c1', np.nan)
+        self.c2 = kwargs.pop('c2', np.nan)
+        self.c3 = kwargs.pop('c3', np.nan)
+        self.c4 = kwargs.pop('c4', np.nan)
                   
 class ARRAYS(ctypes.Structure):
       _fields_ = [("npts", ctypes.c_int),
@@ -255,11 +266,12 @@ def RaiseError(err):
   elif (err == ERR_NOT_IMPLEMENTED):
     raise Exception("Option not implemented.")
   elif (err == ERR_MAX_PTS):
-    raise Exception("Maximum points in lightcurve exceeded.")  
+    raise Exception("Maximum points in lightcurve exceeded. " + 
+                    "Please increase option `maxpts`.")  
   elif (err == ERR_NO_TRANSIT):
     raise Exception("Object does not transit the star.")  
   elif (err == ERR_BAD_ECC):
-    raise Exception("Bad value for the eccentricity.")  
+    raise Exception("Bad value for ``ecc``.")  
   elif (err == ERR_RC):
     raise Exception("Error in elliptic integral function RC().")  
   elif (err == ERR_RJ):
@@ -267,13 +279,21 @@ def RaiseError(err):
   elif (err == ERR_RF):
     raise Exception("Error in elliptic integral function RF().") 
   elif (err == ERR_RADIUS):
-    raise Exception("Bad value for radius.") 
-  elif (err == EXP_PTS):
+    raise Exception("Bad value for ``RpRs``.") 
+  elif (err == ERR_EXP_PTS):
     raise Exception("The number of exposure points must be even.") 
   elif (err == ERR_NOT_COMPUTED):
     raise Exception("Lightcurve must be computed before it can be binned.") 
   elif (err == ERR_STAR_CROSS):
     raise Exception("Star-crossing orbit.") 
+  elif (err == ERR_RHOS_ARS):
+    raise Exception("Must specify one of ``rhos`` or ``aRs``.") 
+  elif (err == ERR_RHOS):
+    raise Exception("Bad value for ``per``.") 
+  elif (err == ERR_ECC_W):
+    raise Exception("Bad value for ``esw`` or ``ecw``.") 
+  elif (err == ERR_LD):
+    raise Exception("Bad value for the limb darkening coefficients.") 
   else:
     raise Excpetion("Error in transit computation.")
 
@@ -324,11 +344,11 @@ class Transit():
     return self.arrays.iarr
   
   def Compute(self):
-    err = _Compute(transit, limbdark, settings, arr)
+    err = _Compute(self.transit, self.limbdark, self.settings, self.arrays)
     if err != ERR_NONE: RaiseError(err)
 
   def Bin(self):
-    err = _Bin(transit, limbdark, settings, arr)
+    err = _Bin(self.transit, self.limbdark, self.settings, self.arrays)
     if err != ERR_NONE: RaiseError(err)
     
 if __name__ == '__main__':

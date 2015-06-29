@@ -245,17 +245,16 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
 	
 	if (settings->exppts % 2) return ERR_EXP_PTS;                                       // Verify user input: Must be even!
 	
-	if (!((transit->RpRs > 0.) && (transit->RpRs < 1.)))                                // Verify user input: Radius
-	  return ERR_RADIUS;
-	
 	if (limbdark->ldmodel == QUADRATIC) {                                               // Verify user input: Limb darkening model
 	  u1 = limbdark->u1;
 	  u2 = limbdark->u2;
+	  if (isnan(u1) || isnan(u2)) return ERR_LD;
 	} else if (limbdark->ldmodel == KIPPING) {
 	  au = sqrt(limbdark->q1);
     bu = 2*limbdark->q2;
     u1 = au*bu;
     u2 = au*(1 - bu);
+    if (isnan(u1) || isnan(u2)) return ERR_LD;
 	} else if (limbdark->ldmodel == NONLINEAR) {
 	  // TODO: Implement this!
 	  return ERR_NOT_IMPLEMENTED;
@@ -263,26 +262,52 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
 	  return ERR_NOT_IMPLEMENTED;
 	}
 	
-  if (transit->model == ECCENTRIC) {                                                  // Verify user input: Transit model
-	  per = transit->per;                                                               // outputal period
-	  RpRs = transit->RpRs;                                                             // Planet radius in units of stellar radius
-	  aRs = pow(((G * transit->rhos * (1. + transit->MpMs) * 
-	        pow(per * DAYSEC, 2)) / (3. * PI)), 1./3.);                                 // Semi-major axis in units of stellar radius
-    inc = acos(transit->bcirc / aRs);                                                 // outputal inclination
-	  w = atan2(transit->esw, transit->ecw);                                            // Longitude of pericenter
-	  ecc = sqrt(transit->esw * transit->esw + transit->ecw * transit->ecw);            // Eccentricity
-	  if ((ecc < 0.) || (ecc >= 1.)) return ERR_BAD_ECC;
-	  fi = (3. * PI / 2.) - w;                                                          // True anomaly at transit center (Shields et al. 2015)
-	  tperi0 = per * sqrt(1. - ecc * ecc) / (2. * PI) * (ecc * sin(fi) / 
-	         (1. + ecc * cos(fi)) - 2. / sqrt(1. - ecc * ecc) * 
-	         atan2(sqrt(1. - ecc * ecc) * tan(fi/2.), 1. + ecc));                       // Time of pericenter passage (Shields et al. 2015)
-	} else if (transit->model == CIRCULAR) {
-	  // TODO: Implement this!
-	  // tperi0 = ?
-    return ERR_NOT_IMPLEMENTED;                                                       
-	} else {
-	  return ERR_NOT_IMPLEMENTED;
-	}
+  per = transit->per;                                                                 // Orbital period
+  if (!(per > 0.)) return ERR_PER;
+  
+  RpRs = transit->RpRs;                                                               // Planet radius in units of stellar radius
+  if (!((RpRs > 0.) && (RpRs < 1.))) return ERR_RADIUS;
+  
+  if (isnan(transit->MpMs)) transit->MpMs = 0.;                                       // We'll assume the secondary is massless
+  
+  if (isnan(transit->rhos)) {                                                         // Stellar density
+    if (isnan(transit->aRs)) return ERR_RHOS_ARS;
+    else aRs = transit->aRs;
+  } else {
+    if (transit->rhos <= 0.) return ERR_RHOS;
+    aRs = pow(((G * transit->rhos * (1. + transit->MpMs) * 
+          pow(per * DAYSEC, 2)) / (3. * PI)), 1./3.);                                 // Semi-major axis in units of stellar radius
+    transit->aRs = aRs;
+  }
+  
+  inc = acos(transit->bcirc / aRs);                                                   // Orbital inclination
+  
+  if (isnan(transit->esw) || isnan(transit->ecw)) {                                   // Eccentricity and longitude of pericenter
+    if (isnan(transit->ecc)) return ERR_ECC_W;
+    if ((transit->ecc != 0) && isnan(transit->w)) 
+      return ERR_ECC_W;
+    else 
+      transit->w = 0;                                           
+    if ((transit->ecc < 0) || (transit->ecc >= 1)) return ERR_ECC_W;
+    if ((transit->w < 0) || (transit->w >= 2 * PI)) return ERR_ECC_W;
+    w = transit->w;
+    ecc = transit->ecc;
+  } else {
+    w = atan2(transit->esw, transit->ecw);
+    ecc = sqrt(transit->esw * transit->esw + transit->ecw * transit->ecw);
+    if ((ecc < 0.) || (ecc >= 1.)) return ERR_BAD_ECC;
+    transit->ecc = ecc;
+    transit->w = w;
+  }
+  
+  if (ecc > 0.) {
+    fi = (3. * PI / 2.) - w;                                                          // True anomaly at transit center (Shields et al. 2015)
+    tperi0 = per * sqrt(1. - ecc * ecc) / (2. * PI) * (ecc * sin(fi) / 
+             (1. + ecc * cos(fi)) - 2. / sqrt(1. - ecc * ecc) * 
+             atan2(sqrt(1. - ecc * ecc) * tan(fi/2.), 1. + ecc));                     // Time of pericenter passage (Shields et al. 2015)
+  } else {
+    tperi0 = 0;
+  }
 	
   omega = 1. - u1/3. - u2/6.;                                                         // See Mandel and Agol (2002)
   dt = settings->exptime / settings->exppts;                                          // The time step
