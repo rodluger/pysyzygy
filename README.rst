@@ -7,7 +7,7 @@ py·sy·zy·gy
 
 *noun*
 
-**1.** Simple planet transit (`syzygy <http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29>`_) visualizations, coded in Python.
+**1.** A fast and general planet transit (`syzygy <http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29>`_) code written in C and in Python.
 
 **2.** ``pysyzygy`` computes **fast** lightcurves for the most general case of a *massive*, *eccentric* planet orbiting a limb-darkened star. Here's a sample output image of an assymetric transit:
 
@@ -16,109 +16,71 @@ py·sy·zy·gy
    :scale: 50 %
    :align: center
 
+**3.** ``pysyzygy`` can also generate sweet animations, such as this one:
+
+.. image:: /../img/transit.gif?raw=True
+   :alt: pysyzygy
+   :scale: 50 %
+   :align: center
+
 Installation
 ============
 Clone the repository and run
 
->>> f2py -c transit.f -m transit
+>>> make
 
 to build the transit module. Then call or import ``pysyzygy`` to begin plotting transits!
 
 Calling pysyzygy...
 ===================
 
-... is super easy.
+... is super easy. If you want to plot stuff, try the following examples:
 
 .. code-block:: python
   
-  import pysyzygy
-  pysyzygy.plot(**kwargs)
+  import pysyzygy as pszg
+  pszg.PlotTransit(M = 0., per = 1.0, RpRs = 0.5, ecc = 0, rhos = 1.0,
+                   b = 1.5, u1 = 1., u2 = 0.)
+ 
+.. code-block:: python  
 
-where ``kwargs`` can be any of:
-
-  * **e** (*float*) - 
-    The eccentricity of the orbit, in the range ``(0., 1.]``. Default ``0.``
-
-  * **i** (*float*) -
-    The inclination of the orbit in degrees, in the range ``(0., 90.)``. 
-    Default ``90.``
-
-  * **MpMs** (*float*) -
-    The ratio of the planet mass to the stellar mass. Default ``0.001``
-
-  * **per** (*float*) -
-    The period of the planet in days. Default ``2.``
-
-  * **rhos** (*float*) -
-    The density of the star in g/cm^3. Default ``1.4``
+  pszg.PlotImage(M = 0., per = 1.0, RpRs = 0.5, ecc = 0, rhos = 1.0,
+                 b = 1.5, u1 = 1., u2 = 0., bkgimage = 'maps/stars.jpg') 
   
-  * **RpRs** (*float*) -
-    The ratio of the planet radius to the stellar radius, in the range ``[0., 0.5]``. 
-    Default ``0.1``
+.. code-block:: python 
+ 
+  pszg.AnimateImage(per = 1.0, RpRs = 0.5, ecc = 0, rhos = 1.0,
+                    b = 1.5, u1 = 1., u2 = 0., delay = 1,
+                    bkgimage = 'maps/stars.jpg', nsteps = 100)
+
+Or, if you're interested in the lightcurve model itself, the ``Transit`` class is
+what you want:
+
+.. code-block:: python
   
-  * **u1** (*float*) -
-    The linear stellar limb darkening coefficient, in the range ``(0., 1.)``. 
-    Default ``0.8``
-
-  * **u2** (*float*) -
-    The quadratic LD coefficient. Note that the sum ``u1 + u2`` must be in the 
-    range ``(0., 1.)``. Default ``-0.4``
-
-  * **w** (*float*) -
-    The argument of periapsis in degrees. Default ``270.``
-
-  * **exptime** (*float*) -
-    The exposure time in days. Default ``0.020434`` (Kepler long cadence)
-
-  * **exp_pts** (*int*) -
-    The number of calls to the transit module in the exposure window. Default ``10``
-
-  * **lc** (*str*) -
-    Options are ``"ideal"`` (plots only the ideal lightcurve), ``"observed"`` (plots
-    only the observed lightcurve), or ``"both"``. Default ``"both"``
-
-  * **ldplot** (*bool*) -
-    Plot the limb darkening profile inset? Default ``True``
-
-  * **plot_name** (*str*) -
-    The name of the file to save the plot to. Default ``transit.png``
-
-  * **plot_title** (*str*) -
-    The plot title. Default ``""``
-
-  * **show_params** (*bool*) -
-    Show the planet parameters on the top plot? Default ``True``
+  import numpy as np
   
-  * **xypts** (*int*) -
-    The number of points to use when plotting the orbit. Default ``1000``
-    
+  # Orbital elements
+  kwargs = {'rhos': 1.0, 'MpMs': 0.001, 'esw': 0.1, 
+            'ecw': 0.1, 'per': 1.0, 'RpRs': 0.1, 
+            't0': 0.0, 'u1': 1.0, 'u2': 0.0}
+  
+  # Instantiate a transit object
+  trn = pszg.Transit(**kwargs) 
+  
+  # Compute the orbital solution and the lightcurve
+  trn.Compute()
+  
+  # Bin the lightcurve to simulate an observation with finite exposure time
+  trn.Bin()
+  
+  # Now interpolate to get the lightcurve on a grid of observation times
+  t = np.arange(0., 10., pszg.transit.KEPLONGCAD)
+  flux = trn.Interpolate(t, 'binned')
+        
+Stay tuned; detailed documentation is coming soon!
+
 Notes
 =====
 
-By default, ``pysyzygy`` outputs a PNG image file with two subplots. The top plot is the stellar lightcurve, centered at the planet transit. The light blue line is the **ideal** lightcurve, which is what a telescope would observe with an infinitely small exposure time. The dark blue line is the **observed** lightcurve, which is what you actually measure with a telescope like Kepler, whose default exposure time is about 30 minutes. The observed lightcurve is smoother and wider because of a blurring effect; it is what you get when you average the ideal lightcurve with a window of size equal to the exposure time.
-
-The bottom plot is the orbit of the planet, as seen by us. Everything is to scale, normalized to the stellar radius. The star is colored according to the assigned limb darkening profile, which is plotted at the top left. The inset on the bottom left is a top view of the orbit, aligned so that the observer is at the bottom.
-
-If you're just interested in the lightcurve, call
-
-.. code-block:: python
-  
-   pysyzygy.lightcurve(t, **kwargs)
-
-where ``t`` is the input time array and ``kwargs`` are the same as before (though here you can also set ``t0``, the time of first transit). If you're just interested in the orbital solution, call
-
-.. code-block:: python
-  
-   pysyzygy.xy(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True)
-
-to get a tuple ``(x, y)`` of the sky-projected coordinates of the planet at times ``t``.
-
 Feel free to change, adapt, or incorporate this code into your project, but please make sure to cite this repository, as well as `Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_, the transit model on which ``pysyzygy`` is based.
-
-Coming Soon
-===========
-
-- Flexible input arguments (i.e., ``q1`` and ``q2`` instead of ``u1`` and ``u2``, ``Ms`` and ``Rs`` instead of ``rhos``, etc.)
-- Nonlinear (four-parameter) limb-darkening
-- Multi-planet systems
-- Star spots (maybe)

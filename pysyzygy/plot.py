@@ -284,7 +284,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   
   # Sky-projected motion
   time = trn.arrays.time
-  ti = np.argmax(-np.abs(trn.arrays.M - M))                                           # Find index closest to desired mean anomaly
+  ti = np.argmax(-np.abs((trn.arrays.M % (2*np.pi)) - M))                             # Find index closest to desired mean anomaly
   x = trn.arrays.x
   y = trn.arrays.y
   z = trn.arrays.z
@@ -304,19 +304,19 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   ax = pl.subplot(111)
   
   if fullplot:
-    xmin = min(-3.5, np.nanmin(x) - 5*RpRs)
-    xmax = max(3.5, np.nanmax(x) + 5*RpRs)
-    ymin = min(-3., np.nanmin(y) - 5*RpRs)
-    ymax = max(3., np.nanmax(y) + 5*RpRs)
+    xmin = min(-2.5, np.nanmin(x) - 5*RpRs)
+    xmax = max(2.5, np.nanmax(x) + 5*RpRs)
+    ymin = min(-2., np.nanmin(y) - 5*RpRs)
+    ymax = max(2., np.nanmax(y) + 5*RpRs)
   else:  
     if xlims is None:
-      xmin = min(-3.5, x[ti] - 5*RpRs)
-      xmax = max(3.5, x[ti] + 5*RpRs)
+      xmin = min(-2.5, x[ti] - 5*RpRs)
+      xmax = max(2.5, x[ti] + 5*RpRs)
     else:
       xmin, xmax = xlims
     if ylims is None:
-      ymin = min(-3., y[ti] - 5*RpRs)
-      ymax = max(3., y[ti] + 5*RpRs)
+      ymin = min(-2., y[ti] - 5*RpRs)
+      ymax = max(2., y[ti] + 5*RpRs)
     else:
       ymin, ymax = ylims
   
@@ -332,7 +332,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   else:
     ax.patch.set_facecolor(bkgcolor)
   
-  if z[0] < 0: 
+  if z[ti] < 0: 
     zorder = -2
   else: 
     zorder = 2
@@ -347,7 +347,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
 
 def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
                  image_map = 'maps/earth.jpg', trail = True,
-                 nsteps = 1000, dpy = 4, plotname = 'transit', **kwargs):
+                 nsteps = 1000, dpy = 4, delay = 3, plotname = 'transit', **kwargs):
   '''
   Note that dpy (= days_per_year) can be set negative for retrograde rotation
   
@@ -360,19 +360,19 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
   for f, long0 in zip(frames, rotation):
     fig, ax = PlotImage(M = M[f], obl=obl, bkgcolor = bkgcolor, bkgimage = bkgimage,
                         long0 = long0, image_map = image_map, trail = trail,
-                        trailpts = nsteps, fullplot = True, **kwargs)
+                        trailpts = max(500, nsteps), fullplot = True, **kwargs)
     fig.savefig('tmp/%03d.png' % f, bbox_inches = 'tight')
     pl.close()
   
   # Make gif
-  subprocess.call(['convert', '-delay', '5', '-loop', '-1', 'tmp/*.png', 
+  subprocess.call(['convert', '-delay', '%d' % delay, '-loop', '-1', 'tmp/*.png', 
                    '%s.gif' % plotname])
 
   # Delete pngs
-  subprocess.call(['rm', '-r', 'tmp'])
+  #subprocess.call(['rm', '-r', 'tmp'])
 
 if __name__ == '__main__':
   
-  AnimateImage(per = 3., RpRs = 0.25, ecw = 0.5, 
-               esw = 0.3, rhos = 1.0,
-               bcirc = 0.9, u1 = 1., u2 = 0.)
+  AnimateImage(per = 1.0, RpRs = 0.5, ecc = 0, rhos = 1.0,
+               b = 1.2, u1 = 1., u2 = 0., delay = 1,
+               bkgimage = 'maps/stars.jpg', nsteps = 100)

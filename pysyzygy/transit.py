@@ -315,10 +315,17 @@ class Transit():
   def __init__(self, **kwargs):
   
     valid = [y[0] for x in [TRANSIT, LIMBDARK, ARRAYS, SETTINGS] for y in x._fields_] # List of valid kwargs
+    valid += ['b']                                                                    # This one is special
     for k in kwargs.keys():
       if k not in valid:
         raise Exception("Invalid kwarg '%s'." % k)  
   
+    if ('q1' in kwargs.keys()) and ('q2' in kwargs.keys()):
+      kwargs.update({'ldmodel': KIPPING})
+    elif ('c1' in kwargs.keys()) and ('c2' in kwargs.keys()) and \
+         ('c3' in kwargs.keys()) and ('c4' in kwargs.keys()):
+      kwargs.update({'ldmodel': NONLINEAR})
+        
     self.arrays = ARRAYS(**kwargs)
     self.limbdark = LIMBDARK(**kwargs)
     self.transit = TRANSIT(**kwargs)
@@ -410,4 +417,16 @@ if __name__ == '__main__':
     pl.plot(t, trn(t, 'x'), 'r.')
     pl.show()
   
-  PlotInterpolation()
+  def DianaTest():  
+    t = np.load("/Users/rod/Desktop/kep35_rod.npz")['t']
+    #trn = Transit(rhos = 1.25, ecw = 0.0, esw = 0.1399, per = 2., t0 = 0., MpMs = 0., bcirc = 0., q1 = 0.5, q2 = 0.3, RpRs = 0.1, exppts = 30)
+    
+    trn = Transit(rhos = 1.25, ecw = 0.0, esw = 0.1399, per = 2., t0 = 0., MpMs = 0., bcirc = 0., u1 = 0.7, u2 = 0.1, RpRs = 0.1, exppts = 30)
+    
+    #pl.plot(t, trn(t, 'binned'), 'r.')
+    trn.Compute()
+    trn.Bin()
+    pl.plot(trn.arrays.time, trn.arrays.flux, 'r.')
+    pl.show()
+  
+  DianaTest()

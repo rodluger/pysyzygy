@@ -256,7 +256,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
 	  au = sqrt(limbdark->q1);
     bu = 2*limbdark->q2;
     u1 = au*bu;
-    u2 = au*(1 - bu);
+    u2 = au*(1 - bu);    
     if (isnan(u1) || isnan(u2)) return ERR_LD;
 	} else if (limbdark->ldmodel == NONLINEAR) {
 	  // TODO: Implement this!
@@ -384,7 +384,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       if (RpRs >= 1. && b[i] <= RpRs - 1.) {                                          // [ONE] Occulting object completely occults source
         lambdae=1.;
       } else if (b[i] > 1. - RpRs) {                                                  // [TWO] Occultor is crossing the limb. Equation (26)
-        kap1 = acos(fmin((1. - x4) / 2. / b[i], 1.));
+        kap1 = acos(fmin((1. - x3) / 2. / b[i], 1.));
         kap0 = acos(fmin((x4 - 1.) / 2 / RpRs / b[i], 1.));
         lambdae = RpRs * RpRs * kap0 + kap1;
         lambdae -= 0.5*sqrt(fmax(4. * b[i] * b[i] - pow(1. - x3, 2.), 0.));
