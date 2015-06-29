@@ -248,15 +248,15 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
 	if (!((transit->RpRs > 0.) && (transit->RpRs < 1.)))                                // Verify user input: Radius
 	  return ERR_RADIUS;
 	
-	if (limbdark->model == QUADRATIC) {                                                 // Verify user input: Limb darkening model
+	if (limbdark->ldmodel == QUADRATIC) {                                               // Verify user input: Limb darkening model
 	  u1 = limbdark->u1;
 	  u2 = limbdark->u2;
-	} else if (limbdark->model == KIPPING) {
+	} else if (limbdark->ldmodel == KIPPING) {
 	  au = sqrt(limbdark->q1);
     bu = 2*limbdark->q2;
     u1 = au*bu;
     u2 = au*(1 - bu);
-	} else if (limbdark->model == NONLINEAR) {
+	} else if (limbdark->ldmodel == NONLINEAR) {
 	  // TODO: Implement this!
 	  return ERR_NOT_IMPLEMENTED;
 	} else {
@@ -314,19 +314,33 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       }
       t += s*dt;                                                                      // Increment the time
       
-      if (b[i] > 1. + RpRs) {                                                         // Check if we're done transiting
-        flux[i] = 1.;                                                                 // That's easy!
-        if (s == -1) {
-          nm = i;                                                                     // We're going to truncate the array at this index on the left
-          nmctr++;                                                                    // We want to add exppts/2 points on each side of the transit
-          if (nmctr == settings->exppts/2) break;                                     // since we'll eventually need those points for binning
-        } 
-        else if (s == 1) {
-          np = i;                                                                     // We're going to truncate the array at this index on the right
-          npctr++;
-          if (npctr == settings->exppts/2 + 1) break;                                 // Note the + 1 on this line to ensure the same number of points on the left and on the right
+      if (!settings->fullorbit) {                                                     // We're only calculating stuff during transit
+        if (b[i] > 1. + RpRs) {                                                       // Check if we're done transiting
+          flux[i] = 1.;                                                               // That's easy!
+          if (s == -1) {
+            nm = i;                                                                   // We're going to truncate the array at this index on the left
+            nmctr++;                                                                  // We want to add exppts/2 points on each side of the transit
+            if (nmctr == settings->exppts/2) break;                                   // since we'll eventually need those points for binning
+          } 
+          else if (s == 1) {
+            np = i;                                                                   // We're going to truncate the array at this index on the right
+            npctr++;
+            if (npctr == settings->exppts/2 + 1) break;                               // Note the + 1 on this line to ensure the same number of points on the left and on the right
+          }
+          continue;
         }
-        continue;
+      } else {
+        if (fabs(t) >= per/2.) {                                                      // We're going to calculate the full orbit, but we know the flux is 1.
+          if (s == -1) nm = i + 1;
+          else if (s == 1) np = i - 1;
+          break;
+        } else {
+          if ((b[i] > 1. + RpRs) || (z[i] > 0)) {                                     // Ignoring secondary eclipse
+            flux[i] = 1.;
+            continue;
+          }
+        }
+      
       }
 
       /*
@@ -493,23 +507,60 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
   return iErr;
 }
 
-int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark, 
+int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limbdark, 
                 SETTINGS *settings, ARRAYS *arr) {
   
   double f1, f0, t1, t0, ti;
   int i, j, nt;
   int iErr = ERR_NONE;
+  double *f;
+  double fill_value;
+  
+  arr->iarr = malloc(ipts*sizeof(double));                                            // The interpolated array 
   
   if (!settings->computed) {
     iErr = Compute(transit, limbdark, settings, arr);                                 // Compute the raw transit model if necessary
     if (iErr != ERR_NONE) return iErr;
   } 
-  if (!settings->binned) {
+  if ((array == ARR_BFLX) && (!settings->binned)) {
     iErr = Bin(transit, limbdark, settings, arr);                                     // Bin the transit if necessary
     if (iErr != ERR_NONE) return iErr;
   }
   
-  arr->iflx = malloc(ipts*sizeof(double));                                            // The interpolated flux array  
+  // Select which array to interpolate
+  
+  if (array == ARR_FLUX) {
+    f = arr->flux;
+    fill_value = 1.;
+  } else if (array == ARR_BFLX) {
+    f = arr->bflx;
+    fill_value = 1.;
+  } else if (array == ARR_M) {
+    f = arr->M;
+    fill_value = NAN;
+  } else if (array == ARR_E) {
+    f = arr->E;
+    fill_value = NAN;
+  } else if (array == ARR_F) {
+    f = arr->f;
+    fill_value = NAN;
+  } else if (array == ARR_R) {
+    f = arr->r;
+    fill_value = NAN;
+  } else if (array == ARR_X) {
+    f = arr->x;
+    fill_value = NAN;
+  } else if (array == ARR_Y) {
+    f = arr->y;
+    fill_value = NAN;
+  } else if (array == ARR_Z) {
+    f = arr->z;
+    fill_value = NAN;
+  } else if (array == ARR_B) {
+    f = arr->b;
+    fill_value = NAN;
+  } else
+    return ERR_NOT_IMPLEMENTED;
   
   j = 0;                                                                              // The interpolation index
   nt = 0;                                                                             // The transit number
@@ -529,7 +580,7 @@ int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark,
     }
     
     if ((ti < arr->time[0]) || (ti >= arr->time[arr->npts-1])) {                      // The case ti == arr->time[arr->npts] is pathological,
-      arr->iflx[i] = 1.;                                                              // but we're technically overestimating the flux slightly
+      arr->iarr[i] = fill_value;                                                      // but we're technically overestimating the flux slightly
       continue;                                                                       // in the zero-probability event that this does occur
     }
                                                                                       
@@ -558,10 +609,10 @@ int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark,
     
     t0 = arr->time[j];                                                                // Interpolation bounds
     t1 = arr->time[j + 1];
-    f0 = arr->bflx[j];
-    f1 = arr->bflx[j + 1];
+    f0 = f[j];
+    f1 = f[j + 1];
   
-    arr->iflx[i] = f0 + (f1 - f0) * (ti - t0) / (t1 - t0);                            // A simple linear interpolation
+    arr->iarr[i] = f0 + (f1 - f0) * (ti - t0) / (t1 - t0);                            // A simple linear interpolation
     
   }
   

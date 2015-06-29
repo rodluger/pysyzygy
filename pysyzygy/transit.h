@@ -27,6 +27,18 @@
 #define ERR_NOT_COMPUTED        11                                                    // User attempted to bin before computing
 #define ERR_STAR_CROSS          12                                                    // Star-crossing orbit
 
+// Arrays
+#define ARR_FLUX                0
+#define ARR_BFLX                1
+#define ARR_M                   2
+#define ARR_E                   3
+#define ARR_F                   4
+#define ARR_R                   5
+#define ARR_X                   6
+#define ARR_Y                   7
+#define ARR_Z                   8
+#define ARR_B                   9
+
 // Numerical
 static double sqrarg;
 #define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
@@ -94,7 +106,7 @@ typedef struct {
 } TRANSIT;
 
 typedef struct {
-  int model;
+  int ldmodel;
   double u1;
   double u2;
   double q1;
@@ -111,7 +123,6 @@ typedef struct {
   double *time;
   double *flux;
   double *bflx;
-  double *iflx;
   double *M;
   double *E;
   double *f;
@@ -120,12 +131,14 @@ typedef struct {
   double *y;
   double *z;
   double *b;
+  double *iarr;  
 } ARRAYS;
 
 typedef struct {
   double cadence;
   double exptime;
   double keptol;
+  int fullorbit;
   int maxpts;
   int exppts;
   int binmethod;
@@ -146,4 +159,4 @@ double TrueAnomaly(double E, double ecc);
 double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter);
 int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
 int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
-int Interpolate(double *t, int ipts, TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
+int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);

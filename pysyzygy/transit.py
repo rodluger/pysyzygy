@@ -1,22 +1,19 @@
-# TODO: Compare kernel posteriors with and without chunking
-# TODO: KOI 142 -> TTVs on the order of 1 day, eccentric -> transit shape changes!
-# TODO: Model synthetic PLD noise subtraction; does it oversubtract the white noise?
-# TODO: Interpolate orbit arrays?
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+'''
+transit.py
+----------
 
-# MAC:
-# >>> gcc -fPIC -c transit.c
-# >>> gcc -shared -Wl,-install_name,transit_mac.so -o transit_mac.so transit.o -lc
-# >>> rm transit.o
-#
-# LINUX:
-# >>> gcc -fPIC -Wl,-Bsymbolic-functions -c -O3 transit.c
-# >>> gcc -shared -O3 -Wl,-Bsymbolic-functions,-soname,transit_linux.so -o transit_linux.so transit.o -lc
-# >>> rm transit.o
+A ``ctypes`` wrapper around a generalized C implementation of the 
+Mandel & Agol (2002) transit model.
+
+'''
 
 import ctypes
 import numpy as np
 from numpy.ctypeslib import ndpointer, as_ctypes
 import platform
+from pysyzygy import PSZGPATH
 
 # Define errors
 ERR_NONE             =   0                                                            # We're good!
@@ -50,6 +47,18 @@ KEPLONGCAD =              (1800./86400.)
 KEPSHRTEXP =              (58.89/86400.)
 KEPSHRTCAD =              (60./86400.)
 
+# Array IDs
+ARR_FLUX    =             0
+ARR_BFLX    =             1
+ARR_M       =             2
+ARR_E       =             3
+ARR_F       =             4
+ARR_R       =             5
+ARR_X       =             6
+ARR_Y       =             7
+ARR_Z       =             8
+ARR_B       =             9
+
 # Other
 MAXTRANSITS =             500
 TRANSITSARR =             ctypes.c_double * MAXTRANSITS
@@ -68,16 +77,16 @@ class TRANSIT(ctypes.Structure):
                   ("_tN", TRANSITSARR)]
       
       def __init__(self, **kwargs):
-        self.model = kwargs.get('model', ECCENTRIC)
-        self.bcirc = kwargs.get('bcirc', 0.)
-        self.rhos = kwargs.get('rhos', 1.)
-        self.MpMs = kwargs.get('MpMs', 0.)
-        self.esw = kwargs.get('esw', 0.)
-        self.ecw = kwargs.get('ecw', 0.)
-        self.per = kwargs.get('per', 1.)
-        self.RpRs = kwargs.get('RpRs', 0.1)
-        self.t0 = kwargs.get('t0', 0.)
-        self._tN_p = kwargs.get('tN', [])                                             # The transit times. NOTE: Must be sorted!
+        self.model = kwargs.pop('model', ECCENTRIC)
+        self.bcirc = kwargs.pop('bcirc', 0.)
+        self.rhos = kwargs.pop('rhos', 1.)
+        self.MpMs = kwargs.pop('MpMs', 0.)
+        self.esw = kwargs.pop('esw', 0.)
+        self.ecw = kwargs.pop('ecw', 0.)
+        self.per = kwargs.pop('per', 1.)
+        self.RpRs = kwargs.pop('RpRs', 0.1)
+        self.t0 = kwargs.pop('t0', 0.)
+        self._tN_p = kwargs.pop('tN', [])                                             # The transit times. NOTE: Must be sorted!
         self._tN = TRANSITSARR(*self._tN_p)
         self.ntrans = len(self._tN_p)                                                 # Number of transits; only used if tN is set (i.e., for TTVs)
       
@@ -93,7 +102,7 @@ class TRANSIT(ctypes.Structure):
       
       
 class LIMBDARK(ctypes.Structure):
-      _fields_ = [("model", ctypes.c_int),
+      _fields_ = [("ldmodel", ctypes.c_int),
                   ("u1", ctypes.c_double),
                   ("u2", ctypes.c_double),  
                   ("q1", ctypes.c_double),
@@ -104,15 +113,15 @@ class LIMBDARK(ctypes.Structure):
                   ("c4", ctypes.c_double)]
                   
       def __init__(self, **kwargs):
-        self.model = kwargs.get('model', QUADRATIC)
-        self.u1 = kwargs.get('u1', 1.)
-        self.u2 = kwargs.get('u2', 0.)
-        self.q1 = kwargs.get('q1', 0.)
-        self.q2 = kwargs.get('q2', 0.)
-        self.c1 = kwargs.get('c1', 0.)
-        self.c2 = kwargs.get('c2', 0.)
-        self.c3 = kwargs.get('c3', 0.)
-        self.c4 = kwargs.get('c4', 0.)
+        self.ldmodel = kwargs.pop('ldmodel', QUADRATIC)
+        self.u1 = kwargs.pop('u1', 1.)
+        self.u2 = kwargs.pop('u2', 0.)
+        self.q1 = kwargs.pop('q1', 0.)
+        self.q2 = kwargs.pop('q2', 0.)
+        self.c1 = kwargs.pop('c1', 0.)
+        self.c2 = kwargs.pop('c2', 0.)
+        self.c3 = kwargs.pop('c3', 0.)
+        self.c4 = kwargs.pop('c4', 0.)
                   
 class ARRAYS(ctypes.Structure):
       _fields_ = [("npts", ctypes.c_int),
@@ -120,7 +129,6 @@ class ARRAYS(ctypes.Structure):
                   ("_time", ctypes.POINTER(ctypes.c_double)),
                   ("_flux", ctypes.POINTER(ctypes.c_double)),
                   ("_bflx", ctypes.POINTER(ctypes.c_double)),
-                  ("_iflx", ctypes.POINTER(ctypes.c_double)),
                   ("_M", ctypes.POINTER(ctypes.c_double)),
                   ("_E", ctypes.POINTER(ctypes.c_double)),
                   ("_f", ctypes.POINTER(ctypes.c_double)),
@@ -128,9 +136,10 @@ class ARRAYS(ctypes.Structure):
                   ("_x", ctypes.POINTER(ctypes.c_double)),
                   ("_y", ctypes.POINTER(ctypes.c_double)),
                   ("_z", ctypes.POINTER(ctypes.c_double)),
-                  ("_b", ctypes.POINTER(ctypes.c_double))]
+                  ("_b", ctypes.POINTER(ctypes.c_double)),
+                  ("_iarr", ctypes.POINTER(ctypes.c_double))]
                   
-      def __init__(self):
+      def __init__(self, **kwargs):
         # self.M = as_ctypes(np.zeros(ndata))
         self.npts = 0
         self.ipts = 0
@@ -147,10 +156,6 @@ class ARRAYS(ctypes.Structure):
       def bflx(self):
         return np.array([self._bflx[i] for i in range(self.npts)])
 
-      @property
-      def iflx(self):
-        return np.array([self._iflx[i] for i in range(self.ipts)])
-        
       @property
       def M(self):
         return np.array([self._M[i] for i in range(self.npts)])
@@ -182,11 +187,16 @@ class ARRAYS(ctypes.Structure):
       @property
       def b(self):
         return np.array([self._b[i] for i in range(self.npts)])
-       
+      
+      @property
+      def iarr(self):
+        return np.array([self._iarr[i] for i in range(self.ipts)])
+             
 class SETTINGS(ctypes.Structure):
       _fields_ = [("cadence", ctypes.c_double),
                   ("exptime", ctypes.c_double),
                   ("keptol", ctypes.c_double),
+                  ("fullorbit", ctypes.c_int),
                   ("maxpts", ctypes.c_int),
                   ("exppts", ctypes.c_int),
                   ("binmethod", ctypes.c_int),
@@ -196,24 +206,29 @@ class SETTINGS(ctypes.Structure):
                   ("binned", ctypes.c_int)]
       
       def __init__(self, **kwargs):
-        self.cadence = kwargs.get('cadence', KEPLONGCAD)                              # Long cadence dt
-        self.exptime = kwargs.get('exptime', KEPLONGEXP)                              # Long cadence integration time
-        self.exppts = kwargs.get('exppts', 500)                                        # Average flux over 10 points for binning
-        self.maxpts = kwargs.get('maxpts', 10000)                                     # Maximum length of arrays ( > exp_pts * transit duration / exptime )
-        self.binmethod = kwargs.get('binmethod', RIEMANN)                             # How to integrate when binning?
-        self.intmethod = kwargs.get('intmethod', SMARTINT)                            # Integration method
-        self.keptol = kwargs.get('keptol', 1.e-15)                                    # Kepler solver tolerance
-        self.maxkepiter = kwargs.get('maxkepiter', 100)                               # Maximum number of iterations in Kepler solver
+        self.cadence = kwargs.pop('cadence', KEPLONGCAD)                              # Long cadence dt
+        self.exptime = kwargs.pop('exptime', KEPLONGEXP)                              # Long cadence integration time
+        fullorbit = kwargs.pop('fullorbit', False)                                    # Compute full orbit or just the transits (default)
+        if fullorbit: self.fullorbit = 1
+        else: self.fullorbit = 0
+        self.exppts = kwargs.pop('exppts', 50)                                        # Average flux over 10 points for binning
+        self.maxpts = kwargs.pop('maxpts', 10000)                                     # Maximum length of arrays ( > exp_pts * transit duration / exptime )
+        self.binmethod = kwargs.pop('binmethod', RIEMANN)                             # How to integrate when binning?
+        self.intmethod = kwargs.pop('intmethod', SMARTINT)                            # Integration method
+        self.keptol = kwargs.pop('keptol', 1.e-15)                                    # Kepler solver tolerance
+        self.maxkepiter = kwargs.pop('maxkepiter', 100)                               # Maximum number of iterations in Kepler solver
         self.computed = 0
         self.binned = 0
-        
+
+# Check the OS
 if platform.system() == "Darwin":
-  lib = ctypes.CDLL('transit_mac.so')
+  lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_mac.so')
 elif platform.system() == "Linux":
-  lib = ctypes.CDLL('transit_linux.so')
+  lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_linux.so')
 else:
   raise Exception("Unknown platform.")
 
+# Declare the C functions
 Compute = lib.Compute
 Compute.restype = ctypes.c_int
 Compute.argtypes = [ctypes.POINTER(TRANSIT), ctypes.POINTER(LIMBDARK), 
@@ -224,14 +239,89 @@ Bin.restype = ctypes.c_int
 Bin.argtypes = [ctypes.POINTER(TRANSIT), ctypes.POINTER(LIMBDARK), 
                 ctypes.POINTER(SETTINGS), ctypes.POINTER(ARRAYS)]
 
-Interpolate = lib.Interpolate
-Interpolate.restype = ctypes.c_int
-Interpolate.argtypes = [ndpointer(dtype=ctypes.c_double),
+_Interpolate = lib.Interpolate
+_Interpolate.restype = ctypes.c_int
+_Interpolate.argtypes = [ndpointer(dtype=ctypes.c_double),
+                        ctypes.c_int,
                         ctypes.c_int,
                         ctypes.POINTER(TRANSIT), 
                         ctypes.POINTER(LIMBDARK), ctypes.POINTER(SETTINGS), 
                         ctypes.POINTER(ARRAYS)]
 
+# Error handling
+def RaiseError(err):
+  if (err == ERR_NONE):
+    return
+  elif (err == ERR_NOT_IMPLEMENTED):
+    raise Exception("Option not implemented.")
+  elif (err == ERR_MAX_PTS):
+    raise Exception("Maximum points in lightcurve exceeded.")  
+  elif (err == ERR_NO_TRANSIT):
+    raise Exception("Object does not transit the star.")  
+  elif (err == ERR_BAD_ECC):
+    raise Exception("Bad value for the eccentricity.")  
+  elif (err == ERR_RC):
+    raise Exception("Error in elliptic integral function RC().")  
+  elif (err == ERR_RJ):
+    raise Exception("Error in elliptic integral function RJ().") 
+  elif (err == ERR_RF):
+    raise Exception("Error in elliptic integral function RF().") 
+  elif (err == ERR_RADIUS):
+    raise Exception("Bad value for radius.") 
+  elif (err == EXP_PTS):
+    raise Exception("The number of exposure points must be even.") 
+  elif (err == ERR_NOT_COMPUTED):
+    raise Exception("Lightcurve must be computed before it can be binned.") 
+  elif (err == ERR_STAR_CROSS):
+    raise Exception("Star-crossing orbit.") 
+  else:
+    raise Excpetion("Error in transit computation.")
+
+# User-friendly wrapper
+class Transit():
+  '''
+  
+  '''
+  
+  def __init__(self, **kwargs):
+    self._arrays = ARRAYS(**kwargs)
+    self._ldark = LIMBDARK(**kwargs)
+    self._trans = TRANSIT(**kwargs)
+    self._stngs = SETTINGS(**kwargs)
+    
+    '''
+    if kwargs != {}:
+      raise Exception("Unknown kwarg '%s'" % kwargs.keys()[0])
+    '''
+    
+  def __call__(self, t, param):
+    if param == 'flux':
+      array = ARR_FLUX
+    elif param == 'binned':
+      array = ARR_BFLX
+    elif param == 'M':
+      array = ARR_M
+    elif param == 'E':
+      array = ARR_E
+    elif param == 'f':
+      array = ARR_F
+    elif param == 'r':
+      array = ARR_R
+    elif param == 'x':
+      array = ARR_X
+    elif param == 'y':
+      array = ARR_Y
+    elif param == 'z':
+      array = ARR_Z
+    elif param == 'b':
+      array = ARR_B
+    else:
+      RaiseError(ERR_NOT_IMPLEMENTED)
+      
+    err = _Interpolate(t, len(t), array, self._trans, self._ldark, self._stngs, self._arrays)
+    if err != ERR_NONE: RaiseError(err)
+    return self._arrays.iarr
+    
 if __name__ == '__main__':
   '''
   For debugging only
@@ -265,7 +355,8 @@ if __name__ == '__main__':
     Bin(transit, limbdark, settings, arr)
     B = interpolate.interp1d(arr.time, arr.bflx, bounds_error=False)
   
-    for i, style, label in zip(range(6), ['r-', 'b-', 'r--', 'b--', 'r-.', 'b-.'], ['R10', 'T10', 'R30', 'T30', 'R50', 'T50']):
+    for i, style, label in zip(range(6), ['r-', 'b-', 'r--', 'b--', 'r-.', 'b-.'], 
+                                         ['R10', 'T10', 'R30', 'T30', 'R50', 'T50']):
       pl.plot(t[i], np.abs(b[i] - B(t[i])), style, label = label)
     pl.legend(loc='upper left')
     pl.yscale('log')
@@ -274,17 +365,11 @@ if __name__ == '__main__':
     pl.show()
   
   def PlotInterpolation():  
-    arr = ARRAYS()
-    limbdark = LIMBDARK()
-    transit = TRANSIT(ecw = 0., esw = 0., bcirc = 0., RpRs = 0.1, per = 1.3)
-    settings = SETTINGS()
-
     t = np.arange(-2.5,2.5,KEPLONGCAD)
     t += 0.001 * np.random.randn(len(t))
-    
-    Interpolate(t, len(t), transit, limbdark, settings, arr)
-    pl.plot(t, arr.iflx, 'r.')
-    
+
+    trn = Transit(ecw = 0.1, esw = 0.1, bcirc = 0.3, per = 1.3, fullorbit = True)
+    pl.plot(t, trn(t, 'x'), 'r.')
     pl.show()
   
   PlotInterpolation()
