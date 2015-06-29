@@ -228,15 +228,15 @@ elif platform.system() == "Linux":
 else:
   raise Exception("Unknown platform.")
 
-# Declare the C functions
-Compute = lib.Compute
-Compute.restype = ctypes.c_int
-Compute.argtypes = [ctypes.POINTER(TRANSIT), ctypes.POINTER(LIMBDARK), 
+# Declare the C functions; user should access these through the Transit() class below
+_Compute = lib.Compute
+_Compute.restype = ctypes.c_int
+_Compute.argtypes = [ctypes.POINTER(TRANSIT), ctypes.POINTER(LIMBDARK), 
                     ctypes.POINTER(SETTINGS), ctypes.POINTER(ARRAYS)]
 
-Bin = lib.Bin
-Bin.restype = ctypes.c_int
-Bin.argtypes = [ctypes.POINTER(TRANSIT), ctypes.POINTER(LIMBDARK), 
+_Bin = lib.Bin
+_Bin.restype = ctypes.c_int
+_Bin.argtypes = [ctypes.POINTER(TRANSIT), ctypes.POINTER(LIMBDARK), 
                 ctypes.POINTER(SETTINGS), ctypes.POINTER(ARRAYS)]
 
 _Interpolate = lib.Interpolate
@@ -277,22 +277,23 @@ def RaiseError(err):
   else:
     raise Excpetion("Error in transit computation.")
 
-# User-friendly wrapper
 class Transit():
   '''
+  A user-friendly wrapper around the ``ctypes`` routines.
   
   '''
   
   def __init__(self, **kwargs):
-    self._arrays = ARRAYS(**kwargs)
-    self._ldark = LIMBDARK(**kwargs)
-    self._trans = TRANSIT(**kwargs)
-    self._stngs = SETTINGS(**kwargs)
-    
-    '''
-    if kwargs != {}:
-      raise Exception("Unknown kwarg '%s'" % kwargs.keys()[0])
-    '''
+  
+    valid = [y[0] for x in [TRANSIT, LIMBDARK, ARRAYS, SETTINGS] for y in x._fields_] # List of valid kwargs
+    for k in kwargs.keys():
+      if k not in valid:
+        raise Exception("Invalid kwarg '%s'." % k)  
+  
+    self.arrays = ARRAYS(**kwargs)
+    self.limbdark = LIMBDARK(**kwargs)
+    self.transit = TRANSIT(**kwargs)
+    self.settings = SETTINGS(**kwargs)
     
   def __call__(self, t, param):
     if param == 'flux':
@@ -318,9 +319,17 @@ class Transit():
     else:
       RaiseError(ERR_NOT_IMPLEMENTED)
       
-    err = _Interpolate(t, len(t), array, self._trans, self._ldark, self._stngs, self._arrays)
+    err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, self.arrays)
     if err != ERR_NONE: RaiseError(err)
-    return self._arrays.iarr
+    return self.arrays.iarr
+  
+  def Compute(self):
+    err = _Compute(transit, limbdark, settings, arr)
+    if err != ERR_NONE: RaiseError(err)
+
+  def Bin(self):
+    err = _Bin(transit, limbdark, settings, arr)
+    if err != ERR_NONE: RaiseError(err)
     
 if __name__ == '__main__':
   '''
@@ -342,8 +351,8 @@ if __name__ == '__main__':
     for i, bm, ep in zip(range(6), [RIEMANN, TRAPEZOID]*3, [10, 10, 20, 20, 50, 50]):
       settings.binmethod=bm
       settings.exppts=ep
-      Compute(transit, limbdark, settings, arr)
-      Bin(transit, limbdark, settings, arr)
+      _Compute(transit, limbdark, settings, arr)
+      _Bin(transit, limbdark, settings, arr)
       t[i] = arr.time
       b[i] = arr.bflx
   
@@ -351,8 +360,8 @@ if __name__ == '__main__':
     settings.binmethod=RIEMANN
     settings.maxpts=100000
     settings.exppts=10000
-    Compute(transit, limbdark, settings, arr)
-    Bin(transit, limbdark, settings, arr)
+    _Compute(transit, limbdark, settings, arr)
+    _Bin(transit, limbdark, settings, arr)
     B = interpolate.interp1d(arr.time, arr.bflx, bounds_error=False)
   
     for i, style, label in zip(range(6), ['r-', 'b-', 'r--', 'b--', 'r-.', 'b-.'], 

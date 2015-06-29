@@ -15,46 +15,9 @@ import matplotlib.pyplot as pl
 import numpy as np
 from scipy.optimize import newton
 import os, sys, subprocess
-G = 6.672e-8
-DAYSEC = 86400
+from transit import Transit
 
-
-__all__ = ['lightcurve', 'xyz', 'plot', 'I', 'animate']
-
-def transit_times(tstart, tstop, t0, per, tdur):
-  '''
-  Calculates all transit times between ``tstart`` and ``tstop``.
-
-  '''
-  n, r = divmod(tstart - t0, per)
-  if r < tdur:
-    t0 = t0 + n*per
-  else:
-    t0 = t0 + (n + 1)*per
-  
-  return np.arange(t0, tstop, per)
-
-def diff(E, e, M):
-  '''
-  Kepler's equation relating the eccentric anomaly ``E``, the eccentricity
-  ``e``, and the mean anomaly ``M``.
-  
-  '''
-  return E - e*np.sin(E) - M
-
-def der1(E, e, M):
-  '''
-  First derivative of Kepler's equation.
-  
-  '''
-  return 1. - e*np.cos(E)
-
-def der2(E, e, M):
-  '''
-  Second derivative of Kepler's equation.
-  
-  '''
-  return e*np.sin(E)
+__all__ = ['lightcurve', 'plot', 'I']
 
 def I(r, u1, u2):
   '''
@@ -139,77 +102,9 @@ def lightcurve(t, **kwargs):
   assert (1 <= exp_pts), 'Invalid value for the number of exposure points.'
   t0 = kwargs.get('t0', 0.)
          
-  # Derived stuff
-  flux = np.ones_like(t, dtype=float)
-  aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)
-  if aRs*(1-e) <= 1.:
-    raise Exception('Error: star-crossing orbit!')
-  bcirc = aRs*np.cos(i)
-  esw = e*np.sin(w)
-  ecw = e*np.cos(w)
-  becc = bcirc*(1.-e**2)/(1.+e*np.sin(w-np.pi))
-  with np.errstate(invalid='ignore'):
-    tdur = per/(2*np.pi)*np.arcsin(((1+RpRs)**2-becc**2)**0.5/(np.sin(i)*aRs))        # (half) transit duration
-    tdur *= np.sqrt(1.-e**2.)/(1.+e*np.sin(w-np.pi))                                  # Correct for eccentricity
-  tdur *= 1.5                                                                         # The correction may be off for high eccentricity, so let's do this for safety
-  if np.isnan(tdur):
-    return flux                                                                       # No transits!
-  
-  tN = transit_times(t[0], t[-1], t0, per, tdur)
-  ntrans = len(tN)
-  try:
-    err = transit.transit(t,flux,bcirc,rhos,MpMs,esw,ecw,per,u1,u2,RpRs,
-                          exptime,tN,exp_pts,ntrans,len(t))
-  except:
-    raise Exception('Error: something went wrong while computing the transit.')
+  trn = Transit(**kwargs) #TODO
   
   return flux
-
-def xyz(t, t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = True):
-  '''
-  Compute the sky-projected coordinates (x,y) of the orbit given an array of times 
-  ``t``, the transit center time ``t0``, the stellar density ``rhos``, the mass ratio
-  ``MpMs``, the period ``per``, the circular impact parameter ``bcirc``, 
-  e*sin(omega) (``esw``) and e*cos(omega) (``ecw``).
-  
-  :returns: A tuple ``(x, y)`` of the sky-projected coordinates over the array of \
-  times ``t``. If ``mask_star`` is ``True``, the part of the orbit that is obscured \
-  by the star is masked with ``np.nan``
-  
-  '''
-  aRs = ((G*rhos*(1. + MpMs)*(per*DAYSEC)**2)/(3*np.pi))**(1./3)                      # semi-major axis / stellar radius
-  sini = np.sqrt(1. - (bcirc/aRs)**2 )
-  e = np.sqrt( esw**2 + ecw**2 )
-  w = np.arctan2(esw, ecw)
-    
-  fi = 3.*np.pi/2 - w                                                                 # True anomaly at transit center (approximate)
-  t_peri = t0 + per*np.sqrt(1 - e**2)/(2*np.pi)*(e*np.sin(fi)/(1+e*np.cos(fi)) - 
-    2./np.sqrt(1-e**2)*np.arctan2(np.sqrt(1-e**2)*np.tan(fi/2.), 1+e))                # Time of pericenter
-
-  x = np.zeros_like(t)                                                                # Sky-projected coordinates
-  y = np.zeros_like(t)
-  z = np.zeros_like(t)                                                                # perp. to sky plane
-  for j, ti in enumerate(t):
-    M = 2*np.pi/per*(ti - t_peri)                                                     # Mean anomaly
-    E = newton(diff, M, args = (e, M), fprime = der1, fprime2 = der2)                 # Eccentric anomaly
-    f = 2*np.arctan(((1. + e)/(1. - e))**(1./2)*np.tan(E/2.))                         # True anomaly
-    rRs = aRs*(1. - e**2)/(1. + e*np.cos(f))                                          # r/Rs
-    b = rRs*np.sqrt(1. - (np.sin(w + f)*sini)**2)                                     # Impact parameter
-    
-    x[j] = rRs*np.cos(w + f)
-    z[j] = rRs*np.sin(w + f)
-    if (b**2 - x[j]**2) < 1e-10:                                                      # Prevent numerical error
-      y[j] = 0.
-    else:
-      if (0 < (f + w) % (2*np.pi) < np.pi):
-        y[j] = np.sqrt(b**2 - x[j]**2)
-      else:
-        y[j] = -np.sqrt(b**2 - x[j]**2)
-    if (mask_star and (((x[j]**2 + y[j]**2) < 1.) and (y[j] > 0))):
-      x[j] = np.nan                                                                   # These get masked when plotting
-      y[j] = np.nan
-      z[j] = np.nan
-  return x, y, z
 
 def plot(**kwargs):
   '''
@@ -474,64 +369,3 @@ def plot(**kwargs):
 
   fig.savefig(plot_name, bbox_inches='tight')
   pl.close()
-
-def animate(name, vals, **kwargs):
-  """
-  Generates an animated gif by looping over a given parameter.
-  
-  :param str name: The name of the parameter to loop over. Must be one of the \
-  keyword arguments to ``plot()``
-  
-  :param array_like vals: The array of values of the parameter
-  
-  :Keyword Arguments:
-  
-  * **delay** (*int*) -
-  The delay between frames in ms. Default ``20``
-  
-  * **loop** (*bool*) -
-  Loop the gif? Default ``True``
-  
-  * **plot_name** (*str*) -
-  The name of the file to save the animation to. Default ``anim.gif``
-  
-  """
-  
-  plot_name = kwargs.get('plot_name', 'anim')
-  if not plot_name.endswith('.gif'): plot_name += '.gif'
-  delay = kwargs.get('delay', 20)
-  delay = str(delay)
-  loop = kwargs.get('loop', True)
-  if loop: loop = '-1'
-  else: loop = '0'
-  
-  # Let's keep things realistic
-  assert (len(vals) < 1000), 'The size of the array must be less than 1000.'
-  
-  # Create a temporary directory
-  if not os.path.exists('tmp'):
-    os.makedirs('tmp')
-  
-  for i,v in enumerate(vals):
-    kwargs.update({'plot_name': 'tmp/%03d.png' % i})
-    kwargs.update({name: v})
-    sys.stdout.write("\rPlotting frame %03d/%03d..." % (i + 1, len(vals)))
-    sys.stdout.flush()
-    plot(**kwargs)
-  
-  # Now clear the line
-  sys.stdout.write("\r "*30 + "\r")
-  
-  # Make gif
-  subprocess.call(['convert', '-delay', delay, '-loop', loop, 'tmp/*.png', plot_name])
-  subprocess.call(['rm', '-r', 'tmp'])
-
-if __name__ == '__main__':
-  # Produce a sample plot
-  plot(e = 0.7, per = 1., w = 350., xypts=10000, 
-       rhos=1., u1 = 0.75, u2 = -0.1, lc = 'ideal', i = 65)
-  
-  # Produce a sample animation
-  #w = np.linspace(170., 375., 100) % 360.
-  #w = np.concatenate((w, w[::-1]))
-  #animate('w', w, e=0.7, per=1., rhos=1., u1=0.5, u2=0., lc = 'ideal', i = 65)
