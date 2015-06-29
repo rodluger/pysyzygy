@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+'''
+proj.py
+-------
+
+'''
+
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as pl

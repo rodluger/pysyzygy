@@ -232,6 +232,9 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
 	int np = 0, nm = 0, npctr = 0, nmctr = 0;
 	int iErr = ERR_NONE;
 	
+	if (settings->fullorbit)                                                            // If we're doing the full orbit, we know how many points we need
+	  settings->maxpts = (int)(10 + settings->exppts * transit->per/settings->exptime); // Add 10 for safety
+	
 	double *time = malloc(settings->maxpts*sizeof(double));                             // Allocate memory for the arrays
 	double *flux = malloc(settings->maxpts*sizeof(double));
   double *M = malloc(settings->maxpts*sizeof(double));   
@@ -540,6 +543,9 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
   int iErr = ERR_NONE;
   double *f;
   double fill_value;
+  
+  if (!(transit->ntrans))
+    if (isnan(transit->t0)) return ERR_T0;                                            // User didn't specify t0!
   
   arr->iarr = malloc(ipts*sizeof(double));                                            // The interpolated array 
   

@@ -3,6 +3,7 @@
 Adapted from ``spheres.py`` by Brett Morris (bmorris3)
 
 """
+
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm

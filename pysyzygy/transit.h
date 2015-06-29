@@ -29,6 +29,7 @@
 #define ERR_RHOS                15                                                    // Bad rhos
 #define ERR_ECC_W               16                                                    // Bad eccentricity/omega
 #define ERR_LD                  17                                                    // Bad limb darkening coeffs
+#define ERR_T0                  18                                                    // Bad t0
 
 // Arrays
 #define ARR_FLUX                0

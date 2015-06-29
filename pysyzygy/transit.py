@@ -34,6 +34,7 @@ ERR_RHOS_ARS         =   14                                                     
 ERR_RHOS             =   15                                                           # Bad rhos
 ERR_ECC_W            =   16                                                           # Bad eccentricity/omega
 ERR_LD               =   17                                                           # Bad limb darkening coeffs
+ERR_T0               =   18                                                           # Bad t0
 
 # Define models
 QUADRATIC  =              0
@@ -223,7 +224,7 @@ class SETTINGS(ctypes.Structure):
         if fullorbit: self.fullorbit = 1
         else: self.fullorbit = 0
         self.exppts = kwargs.pop('exppts', 50)                                        # Average flux over 10 points for binning
-        self.maxpts = kwargs.pop('maxpts', 10000)                                     # Maximum length of arrays ( > exp_pts * transit duration / exptime )
+        self.maxpts = kwargs.pop('maxpts', 10000)                                     # Maximum length of arrays ( > exp_pts * transit duration / exptime ). Ignored if fullorbit = True
         self.binmethod = kwargs.pop('binmethod', RIEMANN)                             # How to integrate when binning?
         self.intmethod = kwargs.pop('intmethod', SMARTINT)                            # Integration method
         self.keptol = kwargs.pop('keptol', 1.e-15)                                    # Kepler solver tolerance
@@ -233,9 +234,15 @@ class SETTINGS(ctypes.Structure):
 
 # Check the OS
 if platform.system() == "Darwin":
-  lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_mac.so')
+  try:
+    lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_mac.so')
+  except:
+    raise Exception("Can't find .so file; please type ``make`` to compile the code.")
 elif platform.system() == "Linux":
-  lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_linux.so')
+  try:
+    lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_linux.so')
+  except:
+    raise Exception("Can't find .so file; please type ``make`` to compile the code.")
 else:
   raise Exception("Unknown platform.")
 
@@ -294,6 +301,8 @@ def RaiseError(err):
     raise Exception("Bad value for ``esw`` or ``ecw``.") 
   elif (err == ERR_LD):
     raise Exception("Bad value for the limb darkening coefficients.") 
+  elif (err == ERR_T0):
+    raise Exception("Bad value for ``t0``.")
   else:
     raise Excpetion("Error in transit computation.")
 

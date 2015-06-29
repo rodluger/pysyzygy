@@ -38,7 +38,7 @@ def I(r, limbdark):
   else:
     raise Exception('Invalid limb darkening model.')
   
-def Star(ax, u1=1, u2=0, x=0, y=0, r=1, n=100, color=(1.0, 0.85, 0.1), zorder=-1):
+def Star(ax, limbdark, x=0, y=0, r=1, n=100, color=(1.0, 0.85, 0.1), zorder=-1):
   '''
   
   '''
@@ -60,7 +60,7 @@ def Star(ax, u1=1, u2=0, x=0, y=0, r=1, n=100, color=(1.0, 0.85, 0.1), zorder=-1
   
   # Limb darkening profile
   rad = np.linspace(0,1,n)[::-1]
-  Ir = I(rad,u1,u2)/I(0,u1,u2)
+  Ir = I(rad,limbdark)/I(0,limbdark)
   for ri,Iri in zip(rad,Ir):
     lightness = 0.95*Iri  
     color = cmap(1 - lightness)
@@ -109,18 +109,12 @@ def Trail(ax, x, y, z, f, r = 0.05, color = "#4682b4", ndots = None, RpRs = 0.25
     trail = pl.Circle((x[i], y[i]), r, color=color, zorder = zorder, alpha = alpha)
     ax.add_artist(trail)
 
-def PlotTransit(**kwargs):
+def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "transit", 
+                xlim = None, binned = True, **kwargs):
   '''
     
   '''
-  
-  ldplot = kwargs.pop('ldplot', True)
-  compact = kwargs.pop('compact', True)
-  plottitle = kwargs.pop('plottitle', "")
-  plotname = kwargs.pop('plotname', "transit")
-  xlim = kwargs.pop('xlim', None)
-  t0 = kwargs.pop('t0', 0.)
-  
+    
   # Plotting
   fig = pl.figure()
   fig.set_size_inches(12,8)
@@ -128,21 +122,28 @@ def PlotTransit(**kwargs):
   ax1, ax2 = pl.subplot(211), pl.subplot(212)
 
   kwargs.update({'fullorbit': True})
+  t0 = kwargs.pop('t0', 0.)
   trn = Transit(**kwargs)
   trn.Compute()
 
   time = trn.arrays.time + t0
-  flux = trn.arrays.flux
+  if binned:
+    trn.Bin()
+    flux = trn.arrays.bflx
+  else:
+    flux = trn.arrays.flux
 
   ax1.plot(time, flux, '-', color='DarkBlue')
   rng = np.max(flux) - np.min(flux)
+  
   if rng > 0:
     ax1.set_ylim(np.min(flux) - 0.1*rng, np.max(flux) + 0.1*rng)
-    left = np.argmax(flux < 1.)
-    right = np.argmax(flux[left:] == 1.) + left
-    rng = time[right] - time[left]
+    left = np.argmax(flux < (1. - 1.e-8))
+    right = np.argmax(flux[left:] > (1. - 1.e-8)) + left
+    rng = time[right] - time[left]    
     ax1.set_xlim(time[left] - rng, time[right] + rng)
-
+  
+    
   ax1.set_xlabel('Time (Days)', fontweight='bold')
   ax1.set_ylabel('Normalized Flux', fontweight='bold')
 
@@ -239,8 +240,6 @@ def PlotTransit(**kwargs):
     ax3.xaxis.set_visible(False)
     ax3.yaxis.set_visible(False)
 
-    # TODO!!!!!!!
-
     # Table of parameters
     ltable = [ r'$P:$',
                r'$e:$',
@@ -251,15 +250,15 @@ def PlotTransit(**kwargs):
                r'$R_p:$',
                r'$u_1:$',
                r'$u_2:$']
-    rtable = [ r'$%.4f\ \mathrm{days}$' % per,
-               r'$%.5f$' % e,
-               r'$%.4f^\circ$' % (i*180./np.pi),
-               r'$%.3f^\circ$' % (w*180./np.pi),
-               r'$%.5f\ \mathrm{g/cm^3}$' % rhos,
-               r'$%.5f\ M_\star$' % MpMs,
-               r'$%.5f\ R_\star$' % RpRs,
-               r'$%.5f$' % u1,
-               r'$%.5f$' % u2]
+    rtable = [ r'$%.4f\ \mathrm{days}$' % trn.transit.per,
+               r'$%.5f$' % trn.transit.ecc,
+               r'$%.4f^\circ$' % (np.arccos(trn.transit.bcirc/trn.transit.aRs)*180./np.pi),
+               r'$%.3f^\circ$' % (trn.transit.w*180./np.pi),
+               r'$%.5f\ \mathrm{g/cm^3}$' % trn.transit.rhos,
+               r'$%.5f\ M_\star$' % trn.transit.MpMs,
+               r'$%.5f\ R_\star$' % trn.transit.RpRs,
+               r'$%.5f$' % trn.limbdark.u1,
+               r'$%.5f$' % trn.limbdark.u2]
     yt = 0.875
     for l,r in zip(ltable, rtable):
       ax3.annotate(l, xy=(0.25, yt), xycoords="axes fraction", ha='right', fontsize=16)
@@ -269,73 +268,111 @@ def PlotTransit(**kwargs):
   fig.savefig(plotname, bbox_inches='tight')
   pl.close()
 
-def PlotImage(t=0., t0=0., rhos=0.5, RpRs=0.25, MpMs=0.01, per=1., bcirc=0.5, 
-         esw=0., ecw=0., u1=1, u2=0, rot=0., bkgcolor = 'white', bkgimage = None,
-         long0 = 0., image_map = 'maps/earth.jpg'):
+def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
+              long0 = 0., image_map = 'maps/earth.jpg', trail = False,
+              trailpts = 5000, xlims = None, ylims = None, fullplot = False, 
+              **kwargs):
   '''
   
   '''
 
-  x, y, z = xyz([t], t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = False)
+  kwargs.update({'fullorbit': True})
+  if trail:
+    kwargs.update({'exppts': 10, 'exptime': 10 * kwargs['per'] / trailpts})
+  trn = Transit(**kwargs)
+  trn.Compute()
+  
+  # Sky-projected motion
+  time = trn.arrays.time
+  ti = np.argmax(-np.abs(trn.arrays.M - M))                                           # Find index closest to desired mean anomaly
+  x = trn.arrays.x
+  y = trn.arrays.y
+  z = trn.arrays.z
+  
+  # Params
+  RpRs = trn.transit.RpRs
+  u1 = trn.limbdark.u1
+  u2 = trn.limbdark.u2
+  
+  # Mask the star
+  for j in range(trn.arrays.npts):
+    if (x[j]**2 + y[j]**2) < 1. and (z[j] > 0):
+      x[j] = np.nan
+      y[j] = np.nan
 
   fig = pl.figure()
   ax = pl.subplot(111)
-  ax.set_xlim(-3.5,3.5)
-  ax.set_ylim(-3,3)
+  
+  if fullplot:
+    xmin = min(-3.5, np.nanmin(x) - 5*RpRs)
+    xmax = max(3.5, np.nanmax(x) + 5*RpRs)
+    ymin = min(-3., np.nanmin(y) - 5*RpRs)
+    ymax = max(3., np.nanmax(y) + 5*RpRs)
+  else:  
+    if xlims is None:
+      xmin = min(-3.5, x[ti] - 5*RpRs)
+      xmax = max(3.5, x[ti] + 5*RpRs)
+    else:
+      xmin, xmax = xlims
+    if ylims is None:
+      ymin = min(-3., y[ti] - 5*RpRs)
+      ymax = max(3., y[ti] + 5*RpRs)
+    else:
+      ymin, ymax = ylims
+  
+  ax.set_xlim(xmin, xmax)
+  ax.set_ylim(ymin, ymax)
   ax.xaxis.set_visible(False)
   ax.yaxis.set_visible(False)
   ax.set_aspect('equal')
-  ax.patch.set_facecolor(bkgcolor)
+  
+  if bkgimage is not None:
+    im = Image.open(bkgimage)
+    ax.imshow(im, extent=(xmin,xmax,ymin,ymax), zorder=-99)
+  else:
+    ax.patch.set_facecolor(bkgcolor)
+  
   if z[0] < 0: 
     zorder = -2
   else: 
     zorder = 2
-  Star(ax, u1 = u1, u2 = u2, zorder = zorder)
-  Planet(ax, x = x[0], y = y[0], z = z[0], r = RpRs, long0 = long0, image_map=image_map)
+  Star(ax, trn.limbdark, zorder = zorder)
+  Planet(ax, x = x[ti], y = y[ti], z = z[ti], r = RpRs, long0 = long0, 
+         image_map=image_map)
+  
+  if trail:
+    Trail(ax, x, y, z, ti, RpRs = RpRs)
   
   return fig, ax
 
-def AnimateImage(t0=0., rhos=0.5, RpRs=0.25, MpMs=0.01, per=1., bcirc=0.5, 
-         esw=0., ecw=0., u1=1, u2=0, rot=0., bkgcolor = 'white', bkgimage = None,
-         nsteps = 1000, dpy = 4, trail = True):
+def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
+                 image_map = 'maps/earth.jpg', trail = True,
+                 nsteps = 1000, dpy = 4, plotname = 'transit', **kwargs):
   '''
   Note that dpy (= days_per_year) can be set negative for retrograde rotation
   
   '''
   subprocess.call(['mkdir', '-p', 'tmp'])
   frames = range(nsteps)
+  M = np.linspace(0,2*np.pi,nsteps)
   rotation = (np.linspace(0, -dpy, nsteps) % 1)*360 - 180
   
-  x, y, z = xyz(np.linspace(-per/2.,per/2.,nsteps), t0, rhos, MpMs, per, bcirc, esw, ecw, mask_star = False)
-  
   for f, long0 in zip(frames, rotation):
-    fig = pl.figure()
-    ax = pl.subplot(111)
-    ax.set_xlim(-3.5,3.5)
-    ax.set_ylim(-3,3)
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
-    ax.set_aspect('equal')
-    if z[f] < 0: 
-      zorder = -2
-    else: 
-      zorder = 2
-    Star(ax, u1 = u1, u2 = u2, zorder = zorder)
-    Planet(ax, x = x[f], y = y[f], z = z[f], r = RpRs, long0 = long0)
-    if trail: Trail(ax, x, y, z, f, RpRs = RpRs)
-
-    if bkgimage is not None:
-      im = Image.open(bkgimage)
-      ax.imshow(im, extent=(-3.5,3.5,-3,3), zorder=-99)
-    else:
-      ax.patch.set_facecolor(bkgcolor)
-
+    fig, ax = PlotImage(M = M[f], obl=obl, bkgcolor = bkgcolor, bkgimage = bkgimage,
+                        long0 = long0, image_map = image_map, trail = trail,
+                        trailpts = nsteps, fullplot = True, **kwargs)
     fig.savefig('tmp/%03d.png' % f, bbox_inches = 'tight')
     pl.close()
   
   # Make gif
-  subprocess.call(['convert', '-delay', '5', '-loop', '-1', 'tmp/*.png', 'transit.gif'])
+  subprocess.call(['convert', '-delay', '5', '-loop', '-1', 'tmp/*.png', 
+                   '%s.gif' % plotname])
+
+  # Delete pngs
+  subprocess.call(['rm', '-r', 'tmp'])
 
 if __name__ == '__main__':
-  PlotTransit(per = 1., RpRs = 0.1, ecw = 0.3, esw = 0.3, rhos = 1.0,
-              bcirc = 0.3, t0 = 1., u1 = 1., u2 = 0.)
+  
+  AnimateImage(per = 3., RpRs = 0.25, ecw = 0.5, 
+               esw = 0.3, rhos = 1.0,
+               bcirc = 0.9, u1 = 1., u2 = 0.)
