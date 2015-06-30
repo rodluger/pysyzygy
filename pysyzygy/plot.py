@@ -369,10 +369,11 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
                    '%s.gif' % plotname])
 
   # Delete pngs
-  #subprocess.call(['rm', '-r', 'tmp'])
+  subprocess.call(['rm', '-r', 'tmp'])
 
 if __name__ == '__main__':
   
   AnimateImage(per = 1.0, RpRs = 0.5, ecc = 0, rhos = 1.0,
                b = 1.2, u1 = 1., u2 = 0., delay = 1,
-               bkgimage = 'maps/stars.jpg', nsteps = 100)
+               bkgimage = 'maps/stars.jpg', nsteps = 100,
+               image_map = 'maps/neptune.jpg')

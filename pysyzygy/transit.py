@@ -315,7 +315,7 @@ class Transit():
   def __init__(self, **kwargs):
   
     valid = [y[0] for x in [TRANSIT, LIMBDARK, ARRAYS, SETTINGS] for y in x._fields_] # List of valid kwargs
-    valid += ['b']                                                                    # This one is special
+    valid += ['b', 'tN']                                                              # These are special!
     for k in kwargs.keys():
       if k not in valid:
         raise Exception("Invalid kwarg '%s'." % k)  
@@ -421,7 +421,7 @@ if __name__ == '__main__':
     import timeit
     import __builtin__
     
-    t = np.load("/Users/rod/Desktop/kep35_rod.npz")['t']
+    t = np.load("/Users/rod/Desktop/kep35_rod.npz")['t'][:3000]
     trn = Transit(rhos = 0.25, ecw = 0.0086125, esw = 0.1399, per = 20.7337445, t0 = 132.846716, MpMs = 0.79/0.8877, bcirc = 0.04999, q1 = 0.127, q2 = 0.999, RpRs = 0.818, exppts = 30)
     
     def compute():
