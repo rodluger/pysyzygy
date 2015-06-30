@@ -224,19 +224,19 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   /*
   
   */    
-	double au, bu, u1, u2, c1, c2, c3, c4;
-	double omega, per, RpRs, aRs, inc, w, ecc, fi, tperi0, t;
-	double dt, tmp;
-	double x1, x2, x3, x4, kap1, kap0, lambdae, lambdad, lam, q, Kk, Ek, n, Pk, etad;
-	int i, s;
-	int np = 0, nm = 0, npctr = 0, nmctr = 0;
-	int iErr = ERR_NONE;
-	
-	if (settings->fullorbit)                                                            // If we're doing the full orbit, we know how many points we need
-	  settings->maxpts = (int)(10 + settings->exppts * transit->per/settings->exptime); // Add 10 for safety
-	
-	double *time = malloc(settings->maxpts*sizeof(double));                             // Allocate memory for the arrays
-	double *flux = malloc(settings->maxpts*sizeof(double));
+  double au, bu, u1, u2, c1, c2, c3, c4;
+  double omega, per, RpRs, aRs, inc, w, ecc, fi, tperi0, t;
+  double dt, tmp;
+  double x1, x2, x3, x4, kap1, kap0, lambdae, lambdad, lam, q, Kk, Ek, n, Pk, etad;
+  int i, s;
+  int np = 0, nm = 0, npctr = 0, nmctr = 0;
+  int iErr = ERR_NONE;
+
+  if (settings->fullorbit)                                                            // If we're doing the full orbit, we know how many points we need
+    settings->maxpts = (int)(10 + settings->exppts * transit->per/settings->exptime); // Add 10 for safety
+
+  double *time = malloc(settings->maxpts*sizeof(double));                             // Allocate memory for the arrays
+  double *flux = malloc(settings->maxpts*sizeof(double));
   double *M = malloc(settings->maxpts*sizeof(double));   
   double *E = malloc(settings->maxpts*sizeof(double));
   double *f = malloc(settings->maxpts*sizeof(double));
@@ -245,26 +245,26 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   double *y = malloc(settings->maxpts*sizeof(double));
   double *z = malloc(settings->maxpts*sizeof(double));
   double *b = malloc(settings->maxpts*sizeof(double));
-	
-	if (settings->exppts % 2) return ERR_EXP_PTS;                                       // Verify user input: Must be even!
-	
-	if (limbdark->ldmodel == QUADRATIC) {                                               // Verify user input: Limb darkening model
-	  u1 = limbdark->u1;
-	  u2 = limbdark->u2;
-	  if (isnan(u1) || isnan(u2)) return ERR_LD;
-	} else if (limbdark->ldmodel == KIPPING) {
-	  au = sqrt(limbdark->q1);
+
+  if (settings->exppts % 2) return ERR_EXP_PTS;                                       // Verify user input: Must be even!
+
+  if (limbdark->ldmodel == QUADRATIC) {                                               // Verify user input: Limb darkening model
+    u1 = limbdark->u1;
+    u2 = limbdark->u2;
+    if (isnan(u1) || isnan(u2)) return ERR_LD;
+  } else if (limbdark->ldmodel == KIPPING) {
+    au = sqrt(limbdark->q1);
     bu = 2*limbdark->q2;
     u1 = au*bu;
     u2 = au*(1 - bu);    
     if (isnan(u1) || isnan(u2)) return ERR_LD;
-	} else if (limbdark->ldmodel == NONLINEAR) {
-	  // TODO: Implement this!
-	  return ERR_NOT_IMPLEMENTED;
-	} else {
-	  return ERR_NOT_IMPLEMENTED;
-	}
-	
+  } else if (limbdark->ldmodel == NONLINEAR) {
+    // TODO: Implement this!
+    return ERR_NOT_IMPLEMENTED;
+  } else {
+    return ERR_NOT_IMPLEMENTED;
+  }
+  
   per = transit->per;                                                                 // Orbital period
   if (!(per > 0.)) return ERR_PER;
   
@@ -311,7 +311,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   } else {
     tperi0 = 0;
   }
-	
+
   omega = 1. - u1/3. - u2/6.;                                                         // See Mandel and Agol (2002)
   dt = settings->exptime / settings->exppts;                                          // The time step
   
