@@ -417,16 +417,23 @@ if __name__ == '__main__':
     pl.plot(t, trn(t, 'x'), 'r.')
     pl.show()
   
-  def DianaTest():  
+  def DianaTest():
+    import timeit
+    import __builtin__
+    
     t = np.load("/Users/rod/Desktop/kep35_rod.npz")['t']
-    #trn = Transit(rhos = 1.25, ecw = 0.0, esw = 0.1399, per = 2., t0 = 0., MpMs = 0., bcirc = 0., q1 = 0.5, q2 = 0.3, RpRs = 0.1, exppts = 30)
+    trn = Transit(rhos = 0.25, ecw = 0.0086125, esw = 0.1399, per = 20.7337445, t0 = 132.846716, MpMs = 0.79/0.8877, bcirc = 0.04999, q1 = 0.127, q2 = 0.999, RpRs = 0.818, exppts = 30)
     
-    trn = Transit(rhos = 1.25, ecw = 0.0, esw = 0.1399, per = 2., t0 = 0., MpMs = 0., bcirc = 0., u1 = 0.7, u2 = 0.1, RpRs = 0.1, exppts = 30)
+    def compute():
+      trn = Transit(rhos = 0.25, ecw = 0.0086125, esw = 0.1399, per = 20.7337445, t0 = 132.846716, MpMs = 0.79/0.8877, bcirc = 0.04999, q1 = 0.127, q2 = 0.999, RpRs = 0.818, exppts = 30)
+      trn.Compute()
+      trn.Bin()
     
-    #pl.plot(t, trn(t, 'binned'), 'r.')
-    trn.Compute()
-    trn.Bin()
-    pl.plot(trn.arrays.time, trn.arrays.flux, 'r.')
+    __builtin__.__dict__.update(locals())
+    print timeit.timeit('compute()', number=100)/100
+    
+    pl.plot(t, trn(t, 'binned'), 'r.')
+
     pl.show()
   
   DianaTest()
