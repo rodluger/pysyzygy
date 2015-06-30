@@ -16,11 +16,10 @@ py·sy·zy·gy
    :scale: 50 %
    :align: center
 
-**3.** ``pysyzygy`` can also generate sweet animations, such as this one:
+**3.** ``pysyzygy`` can also generate sweet animations, such as this one (*WARNING: not to scale!*):
 
 .. image:: /../img/transit.gif?raw=True
    :alt: pysyzygy
-   :scale: 50 %
    :align: center
 
 Installation
