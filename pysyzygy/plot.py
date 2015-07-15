@@ -300,7 +300,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
       x[j] = np.nan
       y[j] = np.nan
 
-  fig = pl.figure()
+  fig = pl.figure()                                                                   # fig = pl.figure(figsize=(298./100, 218./100), dpi=100)
   ax = pl.subplot(111)
   
   if fullplot:
@@ -343,11 +343,14 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   if trail:
     Trail(ax, x, y, z, ti, RpRs = RpRs)
   
+  ax.axis('off')
+  
   return fig, ax
 
 def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
                  image_map = 'maps/earth.jpg', trail = True,
-                 nsteps = 1000, dpy = 4, delay = 3, plotname = 'transit', **kwargs):
+                 nsteps = 1000, dpy = 4, delay = 3, plotname = 'transit', 
+                 xlims = None, ylims = None, resize = None, **kwargs):
   '''
   Note that dpy (= days_per_year) can be set negative for retrograde rotation
   
@@ -357,23 +360,30 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
   M = np.linspace(0,2*np.pi,nsteps)
   rotation = (np.linspace(0, -dpy, nsteps) % 1)*360 - 180
   
+  if xlims is not None and ylims is not None: fullplot = False
+  else: fullplot = True
+  
   for f, long0 in zip(frames, rotation):
     fig, ax = PlotImage(M = M[f], obl=obl, bkgcolor = bkgcolor, bkgimage = bkgimage,
                         long0 = long0, image_map = image_map, trail = trail,
-                        trailpts = max(500, nsteps), fullplot = True, **kwargs)
-    fig.savefig('tmp/%03d.png' % f, bbox_inches = 'tight')
+                        trailpts = max(500, nsteps), fullplot = fullplot,
+                        xlims = xlims, ylims = ylims, **kwargs)
+    fig.savefig('tmp/%03d.png' % f)
     pl.close()
   
   # Make gif
-  subprocess.call(['convert', '-delay', '%d' % delay, '-loop', '-1', 'tmp/*.png', 
-                   '%s.gif' % plotname])
-
+  if resize is not None:
+    subprocess.call(['convert', '-delay', '%d' % delay, '-loop', '-1', 'tmp/*.png', 
+                     '-resize', resize, '%s.gif' % plotname])
+  else:
+    subprocess.call(['convert', '-delay', '%d' % delay, '-loop', '-1', 'tmp/*.png', 
+                     '%s.gif' % plotname])
   # Delete pngs
   subprocess.call(['rm', '-r', 'tmp'])
 
 if __name__ == '__main__':
   
-  AnimateImage(per = 1.0, RpRs = 0.5, ecc = 0, rhos = 1.0,
+  AnimateImage(per = 0.5, RpRs = 0.5, ecc = 0, rhos = 1.0,
                b = 1.2, u1 = 1., u2 = 0., delay = 1,
-               bkgimage = 'maps/stars.jpg', nsteps = 100,
-               image_map = 'maps/neptune.jpg')
+               bkgcolor = 'w', nsteps = 100,
+               image_map = 'maps/earth.jpg')
