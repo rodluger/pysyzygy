@@ -93,6 +93,10 @@ double rj(double x, double y, double z, double p, int *err) {
   *err = ERR_NONE;
   if (DMIN(DMIN(x,y),z) < 0.0 || DMIN(DMIN(x+y,x+z),DMIN(y+z,fabs(p))) < RJ_TINY   
                               || DMAX(DMAX(x,y),DMAX(z,fabs(p))) > RJ_BIG) {
+    
+    //debug
+    printf("%.5e\t%.5e\t%.5e\t%.5e\n", x, y, z, p);
+    
     *err = ERR_RJ;
     return 0.;    
   }  
@@ -404,6 +408,12 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
         Kk = ellk(q);
         Ek = ellec(q);
         n = 1./x1 - 1.;
+        
+        // When the impact parameter approaches RpRs, x1 tends to zero and
+        // n tends to infinity. The following line prevents overflow when calling rj()
+        // TODO: Verify this.
+        if (1. + n > RJ_BIG) n = RJ_BIG - 1.;
+        
         Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
         if (iErr != ERR_NONE) return iErr;
         lambdad = 1. / 9. / PI / sqrt(RpRs * b[i]) * (((1. - x2) * 
@@ -421,6 +431,12 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
           Kk = ellk(q);
           Ek = ellec(q);
           n = x2 / x1 - 1.;
+          
+          // When the impact parameter approaches RpRs, x1 tends to zero and
+          // n tends to infinity. The following line prevents overflow when calling rj()
+          // TODO: Verify this.
+          if (1. + n > RJ_BIG) n = RJ_BIG - 1.;
+          
           Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
           if (iErr != ERR_NONE) return iErr;
           lambdad = 2. / 9. / PI / sqrt(1. - x1) * ((1. - 5. * b[i] * b[i] + RpRs * 
