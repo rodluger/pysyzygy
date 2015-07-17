@@ -93,6 +93,7 @@ static double dminarg1, dminarg2;
 #define KEPSHRTEXP              (58.89/86400.)
 #define KEPSHRTCAD              (60./86400.)
 #define MAXTRANSITS             500
+#define MAXPTS                  10000
 
 // Structs
 typedef struct {
@@ -124,19 +125,20 @@ typedef struct {
 } LIMBDARK;
 
 typedef struct {
-  int npts;
+  int nstart;
+  int nend;
   int ipts;
-  double *time;
-  double *flux;
-  double *bflx;
-  double *M;
-  double *E;
-  double *f;
-  double *r;
-  double *x;
-  double *y;
-  double *z;
-  double *b;
+  double time[10000];
+  double flux[10000];
+  double bflx[10000];
+  double M[10000];
+  double E[10000];
+  double f[10000];
+  double r[10000];
+  double x[10000];
+  double y[10000];
+  double z[10000];
+  double b[10000];
   double *iarr;  
 } ARRAYS;
 
@@ -145,7 +147,6 @@ typedef struct {
   double exptime;
   double keptol;
   int fullorbit;
-  int maxpts;
   int exppts;
   int binmethod;
   int intmethod;
@@ -166,3 +167,4 @@ double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter);
 int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
 int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
 int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
+void dbl_free(double *ptr);

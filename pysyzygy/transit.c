@@ -236,20 +236,6 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   int np = 0, nm = 0, npctr = 0, nmctr = 0;
   int iErr = ERR_NONE;
 
-  if (settings->fullorbit)                                                            // If we're doing the full orbit, we know how many points we need
-    settings->maxpts = (int)(10 + settings->exppts * transit->per/settings->exptime); // Add 10 for safety
-
-  double *time = malloc(settings->maxpts*sizeof(double));                             // Allocate memory for the arrays
-  double *flux = malloc(settings->maxpts*sizeof(double));
-  double *M = malloc(settings->maxpts*sizeof(double));   
-  double *E = malloc(settings->maxpts*sizeof(double));
-  double *f = malloc(settings->maxpts*sizeof(double));
-  double *r = malloc(settings->maxpts*sizeof(double));
-  double *x = malloc(settings->maxpts*sizeof(double));
-  double *y = malloc(settings->maxpts*sizeof(double));
-  double *z = malloc(settings->maxpts*sizeof(double));
-  double *b = malloc(settings->maxpts*sizeof(double));
-
   if (settings->exppts % 2) return ERR_EXP_PTS;                                       // Verify user input: Must be even!
 
   if (limbdark->ldmodel == QUADRATIC) {                                               // Verify user input: Limb darkening model
@@ -321,34 +307,35 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   
   for (s = -1; s <= 1; s+=2) {                                                        // Sign: -1 or +1
     t = 0.;
-    for (i = settings->maxpts/2; ((i < settings->maxpts) && (i >= 0)) ; i+=s) {       // Loop over all points. Start from transit center and go left, then right
+    for (i = MAXPTS/2; ((i < MAXPTS) && (i >= 0)) ; i+=s) {                           // Loop over all points. Start from transit center and go left, then right
          
       /*
       --- ORBITAL SOLUTION ---
       */
       
-      time[i] = t;
-      M[i] = 2. * PI / per * (time[i] - tperi0);                                      // Mean anomaly
-      E[i] = EccentricAnomaly(M[i], ecc, settings->keptol, settings->maxkepiter);     // Eccentric anomaly
-      if (E[i] == -1) return ERR_KEPLER;
-      f[i] = TrueAnomaly(E[i], ecc);                                                  // True anomaly
-      r[i] = aRs * (1. - ecc * ecc)/(1. + ecc * cos(f[i]));                           // Star-planet separation in units of stellar radius
-      if (r[i] - RpRs < 1.) return ERR_STAR_CROSS;                                    // Star-crossing orbit!
-      b[i] = r[i] * sqrt(1. - pow(sin(w + f[i]) * sin(inc), 2.));                     // Instantaneous impact parameter                                   
-      x[i] = r[i] * cos(w + f[i]);                                                    // Cartesian sky-projected coordinates
-      z[i] = r[i] * sin(w + f[i]);
-      if (b[i] * b[i] - x[i] * x[i] < 1.e-10) 
-        y[i] = 0.;                                                                    // Prevent numerical errors
+      arr->time[i] = t;
+      arr->M[i] = 2. * PI / per * (arr->time[i] - tperi0);                            // Mean anomaly
+      arr->E[i] = EccentricAnomaly(arr->M[i], ecc, settings->keptol, 
+                                   settings->maxkepiter);                             // Eccentric anomaly
+      if (arr->E[i] == -1) return ERR_KEPLER;
+      arr->f[i] = TrueAnomaly(arr->E[i], ecc);                                        // True anomaly
+      arr->r[i] = aRs * (1. - ecc * ecc)/(1. + ecc * cos(arr->f[i]));                 // Star-planet separation in units of stellar radius
+      if (arr->r[i] - RpRs < 1.) return ERR_STAR_CROSS;                               // Star-crossing orbit!
+      arr->b[i] = arr->r[i] * sqrt(1. - pow(sin(w + arr->f[i]) * sin(inc), 2.));      // Instantaneous impact parameter                                   
+      arr->x[i] = arr->r[i] * cos(w + arr->f[i]);                                     // Cartesian sky-projected coordinates
+      arr->z[i] = arr->r[i] * sin(w + arr->f[i]);
+      if (arr->b[i] * arr->b[i] - arr->x[i] * arr->x[i] < 1.e-10) 
+        arr->y[i] = 0.;                                                               // Prevent numerical errors
       else {
-        tmp = modulus(f[i] + w, 2 * PI);                                              // TODO: Verify this modulus
-        y[i] = sqrt(b[i] * b[i] - x[i] * x[i]);
-        if (!((0 < tmp) && (tmp < PI))) y[i] *= -1;
+        tmp = modulus(arr->f[i] + w, 2 * PI);                                         // TODO: Verify this modulus
+        arr->y[i] = sqrt(arr->b[i] * arr->b[i] - arr->x[i] * arr->x[i]);
+        if (!((0 < tmp) && (tmp < PI))) arr->y[i] *= -1;
       }
       t += s*dt;                                                                      // Increment the time
       
       if (!settings->fullorbit) {                                                     // We're only calculating stuff during transit
-        if (b[i] > 1. + RpRs) {                                                       // Check if we're done transiting
-          flux[i] = 1.;                                                               // That's easy!
+        if (arr->b[i] > 1. + RpRs) {                                                  // Check if we're done transiting
+          arr->flux[i] = 1.;                                                          // That's easy!
           if (s == -1) {
             nm = i;                                                                   // We're going to truncate the array at this index on the left
             nmctr++;                                                                  // We want to add exppts/2 points on each side of the transit
@@ -367,8 +354,8 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
           else if (s == 1) np = i - 1;
           break;
         } else {
-          if ((b[i] > 1. + RpRs) || (z[i] > 0)) {                                     // Ignoring secondary eclipse
-            flux[i] = 1.;
+          if ((arr->b[i] > 1. + RpRs) || (arr->z[i] > 0)) {                           // Ignoring secondary eclipse
+            arr->flux[i] = 1.;
             continue;
           }
         }
@@ -379,32 +366,33 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       --- TRANSIT FLUX ---
       */
       
-      x1 = pow(RpRs - b[i], 2.);                                                      // Set up some quantities to compute the transit flux
-      x2 = pow(RpRs + b[i], 2.);                                                      // The following is adapted from Eric Agol's fortran routines
-      x3 = RpRs * RpRs - b[i]*b[i];
-      x4 = RpRs * RpRs + b[i]*b[i];
+      x1 = pow(RpRs - arr->b[i], 2.);                                                 // Set up some quantities to compute the transit flux
+      x2 = pow(RpRs + arr->b[i], 2.);                                                 // The following is adapted from Eric Agol's fortran routines
+      x3 = RpRs * RpRs - arr->b[i]*arr->b[i];
+      x4 = RpRs * RpRs + arr->b[i]*arr->b[i];
       
       // 1. Compute lambdae
-      if (RpRs >= 1. && b[i] <= RpRs - 1.) {                                          // [ONE] Occulting object completely occults source
+      if (RpRs >= 1. && arr->b[i] <= RpRs - 1.) {                                     // [ONE] Occulting object completely occults source
         lambdae=1.;
-      } else if (b[i] > 1. - RpRs) {                                                  // [TWO] Occultor is crossing the limb. Equation (26)
-        kap1 = acos(fmin((1. - x3) / 2. / b[i], 1.));
-        kap0 = acos(fmin((x4 - 1.) / 2 / RpRs / b[i], 1.));
+      } else if (arr->b[i] > 1. - RpRs) {                                             // [TWO] Occultor is crossing the limb. Equation (26)
+        kap1 = acos(fmin((1. - x3) / 2. / arr->b[i], 1.));
+        kap0 = acos(fmin((x4 - 1.) / 2 / RpRs / arr->b[i], 1.));
         lambdae = RpRs * RpRs * kap0 + kap1;
-        lambdae -= 0.5*sqrt(fmax(4. * b[i] * b[i] - pow(1. - x3, 2.), 0.));
+        lambdae -= 0.5*sqrt(fmax(4. * arr->b[i] * arr->b[i] - pow(1. - x3, 2.), 0.));
         lambdae /= PI;
-      } else if (b[i] <= 1. - RpRs) {                                                 // [THREE] Occultor is crossing the star
+      } else if (arr->b[i] <= 1. - RpRs) {                                            // [THREE] Occultor is crossing the star
         lambdae = RpRs * RpRs;
       }
       
       // 2. Compute lambdad and etad
-      if (RpRs >= 1. && b[i] <= RpRs - 1.) {                                          // [ONE] Occulting object completely occults source
+      if (RpRs >= 1. && arr->b[i] <= RpRs - 1.) {                                     // [ONE] Occulting object completely occults source
         lambdad=1.;
         etad=1.;
-      } else if ((b[i] > 0.5 + fabs(RpRs - 0.5) && b[i] < 1. + RpRs) || 
-                 (RpRs > 0.5 && b[i] > fabs(1. - RpRs) * 1.0001 && b[i] < RpRs)) {    // [TWO] The occultor partly occults the star and crosses the limb
+      } else if ((arr->b[i] > 0.5 + fabs(RpRs - 0.5) && arr->b[i] < 1. + RpRs) || 
+                 (RpRs > 0.5 && arr->b[i] > fabs(1. - RpRs) * 
+                 1.0001 && arr->b[i] < RpRs)) {                                       // [TWO] The occultor partly occults the star and crosses the limb
         lam = 0.5 * PI;
-        q = sqrt((1. - x1)/ 4. / b[i] / RpRs);
+        q = sqrt((1. - x1)/ 4. / arr->b[i] / RpRs);
         Kk = ellk(q);
         Ek = ellec(q);
         n = 1./x1 - 1.;
@@ -416,16 +404,16 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
         
         Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
         if (iErr != ERR_NONE) return iErr;
-        lambdad = 1. / 9. / PI / sqrt(RpRs * b[i]) * (((1. - x2) * 
+        lambdad = 1. / 9. / PI / sqrt(RpRs * arr->b[i]) * (((1. - x2) * 
                   (2. * x2 + x1 - 3.) - 3. * x3 * (x2 - 2.)) * Kk + 4. * 
-                  RpRs * b[i] * ( b[i] * b[i] + 7. * RpRs * RpRs - 4.) * 
-                  Ek - 3. * x3 / x1 * Pk);                                            // Equation (34), lambda_1
-        if (b[i] < RpRs) lambdad += 2./3.;
+                  RpRs * arr->b[i] * ( arr->b[i] * arr->b[i] + 7. * RpRs * RpRs - 4.) 
+                  * Ek - 3. * x3 / x1 * Pk);                                          // Equation (34), lambda_1
+        if (arr->b[i] < RpRs) lambdad += 2./3.;
         etad = 1. / 2. / PI * (kap1 + RpRs * RpRs * 
-              (RpRs * RpRs + 2. * b[i] * b[i]) * kap0 - 
-              (1. + 5. * RpRs * RpRs + b[i] * b[i]) / 4. * 
+              (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]) * kap0 - 
+              (1. + 5. * RpRs * RpRs + arr->b[i] * arr->b[i]) / 4. * 
               sqrt((1. - x1) * (x2 - 1.)));                                           // Equation (34), eta_1
-      } else if (RpRs <= 1. && b[i] <= (1. - RpRs) * 1.0001) {                        // [THREE] Occultor is crossing the star
+      } else if (RpRs <= 1. && arr->b[i] <= (1. - RpRs) * 1.0001) {                   // [THREE] Occultor is crossing the star
           lam = 0.5 * PI;
           q = sqrt((x2 - x1) / (1. - x1));
           Kk = ellk(q);
@@ -433,124 +421,80 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
           n = x2 / x1 - 1.;
           
           // When the impact parameter approaches RpRs, x1 tends to zero and
-          // n tends to infinity. The following line prevents overflow when calling rj()
+          // n tends to infinity. The next line prevents overflow when calling rj()
           // TODO: Verify this.
           if (1. + n > RJ_BIG) n = RJ_BIG - 1.;
           
           Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
           if (iErr != ERR_NONE) return iErr;
-          lambdad = 2. / 9. / PI / sqrt(1. - x1) * ((1. - 5. * b[i] * b[i] + RpRs * 
-                    RpRs + x3 * x3) * Kk + (1. - x1) * (b[i] * b[i] + 7. * RpRs * 
-                    RpRs - 4.) * Ek - 3. * x3 / x1 * Pk);                             // Equation (34), lambda_2   
-          if (b[i] < RpRs) lambdad += 2./3.;
-          if (fabs(RpRs + b[i] - 1.) <= 1.e-4)
+          lambdad = 2. / 9. / PI / sqrt(1. - x1) * ((1. - 5. * arr->b[i] * 
+                    arr->b[i] + RpRs * RpRs + x3 * x3) * Kk + (1. - x1) * (arr->b[i] 
+                    * arr->b[i] + 7. * RpRs * RpRs - 4.) * Ek - 3. * x3 / x1 * Pk);   // Equation (34), lambda_2   
+          if (arr->b[i] < RpRs) lambdad += 2./3.;
+          if (fabs(RpRs + arr->b[i] - 1.) <= 1.e-4)
             lambdad = 2. / 3. / PI * acos(1. - 2. * RpRs) - 4. / 9. / PI * 
                       sqrt(RpRs * (1. - RpRs)) * (3. + 2. * RpRs - 8. * RpRs * RpRs);
-          etad = RpRs * RpRs / 2. * (RpRs * RpRs + 2. * b[i] * b[i]);                 // Equation (34), eta_2
+          etad = RpRs * RpRs / 2. * (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]);       // Equation (34), eta_2
       }
       
-      flux[i] = 1. - ((1. - u1 - 2. * u2) * lambdae + (u1 + 2. * u2) * 
+      arr->flux[i] = 1. - ((1. - u1 - 2. * u2) * lambdae + (u1 + 2. * u2) * 
                       lambdad + u2 * etad) / omega;                                   // Finally, the transit flux (baseline = 1.)
 
     }
   }
   
   if ((nm == 0) || (np == 0)) return ERR_MAX_PTS;                                     // We didn't reach the edge of the transit within MAXPTS
-  if ((nm == settings->maxpts/2) && (np == settings->maxpts/2)) return ERR_NO_TRANSIT;// There's no transit!
+  if ((nm == MAXPTS/2) && (np == MAXPTS/2)) return ERR_NO_TRANSIT;                    // There's no transit!
   
-  
-  arr->npts = np - nm + 1;                                                            // Populate output arrays
-  arr->time = &time[nm];                                                              // Shift the pointer so that we start at the left edge of the transit window
-  arr->flux = &flux[nm];
-  arr->M = &M[nm];
-  arr->E = &E[nm];
-  arr->f = &f[nm];
-  arr->r = &r[nm];
-  arr->x = &x[nm];
-  arr->y = &y[nm];
-  arr->z = &z[nm];
-  arr->b = &b[nm];
-  
-  
-  
-  /*
-  // DEBUG
-  arr->time = time;
-  arr->flux = flux;
-  arr->M = M;
-  arr->E = E;
-  arr->f = f;
-  arr->r = r;
-  arr->x = x;
-  arr->y = y;
-  arr->z = z;
-  arr->b = b;
-  */
-  
-  /*
-  // DEBUG
-  free(arr->time);
-  free(arr->flux);
-  free(arr->M);
-  free(arr->E);
-  free(arr->f);
-  free(arr->r);
-  free(arr->x);
-  free(arr->y);
-  free(arr->z);
-  free(arr->b);
-  */
-  
+  arr->nstart = nm;                                                                   // first index
+  arr->nend = np + 1;                                                                 // one plus last index
   settings->computed = 1;                                                             // Set the flag
 	return iErr;
 }
 
 int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
   int iErr = ERR_NONE;
-  int i, j, ep, nb, hx;
-  
+  int i, j, ep, nb, hx; 
   double sum;
-  
-  arr->bflx = malloc(arr->npts*sizeof(double));                                       // The binned flux array
-  
+
   if (!settings->computed) return ERR_NOT_COMPUTED;                                   // Must compute first!
   ep = settings->exppts;                                                              // Shortcut for exppts
   hx = ep/2;                                                                          // The number of extra points on each side of the transit
   nb = ep + 1;                                                                        // Actual number of points in bin must be odd, but user doesn't need to know this!
   
   if (settings->binmethod == RIEMANN) {
-    arr->bflx[0] = (arr->flux[hx] + ep) / nb;                                         // Set the leftmost bin
+    arr->bflx[arr->nstart] = (arr->flux[arr->nstart + hx] + ep) / nb;                 // Set the leftmost bin
   
-    for (i = 1; i < hx + 1; i++)                                                      // For these guys, the left edge of the exposure window starts prior to where we've
+    for (i = arr->nstart + 1; i < arr->nstart + hx + 1; i++)                          // For these guys, the left edge of the exposure window starts prior to where we've
       arr->bflx[i] = arr->bflx[i - 1] + (arr->flux[i + hx] - 1.) / nb;                // calculated flux values, but we know that the flux is all 1.0 out here
   
-    for (i = hx + 1; i < arr->npts - hx; i++)                                         // Intelligent summation to compute bins
+    for (i = arr->nstart + hx + 1; i < arr->nend - hx; i++)                           // Intelligent summation to compute bins
       arr->bflx[i] = arr->bflx[i - 1] + 
                     (arr->flux[i + hx] - arr->flux[i - 1 - hx]) / nb;
   
-    for (i = arr->npts - hx; i < arr->npts; i++)                                      // Again, deal with edge effects
+    for (i = arr->nend - hx; i < arr->nend; i++)                                      // Again, deal with edge effects
       arr->bflx[i] = arr->bflx[i - 1] + (1. - arr->flux[i - 1 - hx]) / nb;
   
   } else if (settings->binmethod == TRAPEZOID) {
-    arr->bflx[0] = 1. + 0.5 / ep * (arr->flux[hx] - 1.);                              // Set the leftmost bin
+    arr->bflx[arr->nstart] = 1. + 0.5 / ep * (arr->flux[arr->nstart + hx] - 1.);      // Set the leftmost bin
 
-    for (i = 1; i < hx + 1; i++)
+    for (i = arr->nstart + 1; i < arr->nstart + hx + 1; i++)
       arr->bflx[i] = arr->bflx[i - 1] + 1. / (2 * ep) * (arr->flux[i + hx] + 
                      arr->flux[i + hx - 1] - 2.);                                     
   
-    for (i = hx + 1; i < arr->npts - hx; i++)
+    for (i = arr->nstart + hx + 1; i < arr->nend - hx; i++)
       arr->bflx[i] = arr->bflx[i - 1] + 1. / (2 * ep) * (arr->flux[i + hx] + 
                      arr->flux[i + hx - 1] - arr->flux[i - hx] - 
                      arr->flux[i - hx -1]);                                           // We're essentially doing the same intelligent summation as above
   
-    for (i = arr->npts - hx; i < arr->npts; i++)
+    for (i = arr->nend - hx; i < arr->nend; i++)
       arr->bflx[i] = arr->bflx[i - 1] + 1. / (2 * ep) * (2. - 
                      arr->flux[i - hx] - arr->flux[i - hx -1]);
     
   } else if (settings->binmethod == -1) {                                             // DEBUG: This is the old trapezoid routine. Use for testing only
-    arr->bflx[0] = 1. + 0.5 / ep * (arr->flux[hx] - 1.);                              // Set the leftmost bin
+    arr->bflx[arr->nstart] = 1. + 0.5 / ep * (arr->flux[arr->nstart + hx] - 1.);      // Set the leftmost bin
 
-    for (i = 1; i < hx + 1; i++) {
+    for (i = arr->nstart + 1; i < arr->nstart + hx + 1; i++) {
       sum = 0;
       for (j = i - hx + 1; j < i + hx; j++) {
         if (j >= 0) sum += arr->flux[j];
@@ -559,17 +503,17 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
       arr->bflx[i] = 1. / (nb - 1) * (0.5 * (1. + arr->flux[i + hx]) + sum);
     }
     
-    for (i = hx + 1; i < arr->npts - hx; i++) {
+    for (i = arr->nstart + hx + 1; i < arr->nend - hx; i++) {
       sum = 0;
       for (j = i - hx + 1; j < i + hx; j++) sum += arr->flux[j];
       arr->bflx[i] = 1. / (nb - 1) * (0.5 * (arr->flux[i - hx] + 
                                       arr->flux[i + hx]) + sum);
     } 
   
-    for (i = arr->npts - hx; i < arr->npts; i++) {
+    for (i = arr->nend - hx; i < arr->nend; i++) {
       sum = 0;
       for (j = i - hx + 1; j < i + hx; j++) {
-        if (j < arr->npts) sum += arr->flux[j];
+        if (j < arr->nend - arr->nstart) sum += arr->flux[j];                         // TODO: Verify this line (are we off by 1?)
         else sum += 1.;
       }
       arr->bflx[i] = 1. / (nb - 1) * (0.5 * (arr->flux[i - hx] + 1.) + sum);
@@ -581,6 +525,8 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
   
   settings->binned = 1;                                                               // Set the flag
   return iErr;
+
+
 }
 
 int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limbdark, 
@@ -591,7 +537,7 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
   int iErr = ERR_NONE;
   double *f;
   double fill_value;
-  
+
   if (!(transit->ntrans))
     if (isnan(transit->t0)) return ERR_T0;                                            // User didn't specify t0!
   
@@ -658,38 +604,38 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
       }
     }
     
-    if ((ti < arr->time[0]) || (ti >= arr->time[arr->npts-1])) {                      // The case ti == arr->time[arr->npts] is pathological,
+    if ((ti < arr->time[arr->nstart]) || (ti >= arr->time[arr->nend-1])) {            // The case ti == arr->time[arr->nend-1] is pathological,
       arr->iarr[i] = fill_value;                                                      // but we're technically overestimating the flux slightly
       continue;                                                                       // in the zero-probability event that this does occur
     }
-                                                                                      
+                                                                                              
     // Now we find [j, j + 1], the indices bounding the data point
     
     if (settings->intmethod == SMARTINT) {                                            // Increment j intelligently. NOTE: time array must be sorted!
       if (j > 0) j += settings->exppts * (t[i] - t[i - 1])/settings->cadence;         
-      j = j % arr->npts;
+      j = j % (arr->nend - arr->nstart);
       
-      if (arr->time[j + 1] <= ti) {                                                   // We undershot; let's loop until we get the right index
-        for (; j < arr->npts - 1; j++) {
-          if (arr->time[j + 1] > ti) break;
+      if (arr->time[arr->nstart + j + 1] <= ti) {                                     // We undershot; let's loop until we get the right index
+        for (; j < arr->nend - arr->nstart - 1; j++) {
+          if (arr->time[arr->nstart + j + 1] > ti) break;
         }
       } else {                                                                        // We either overshot or got it right
         for (; j >= 0; j--) {
-          if (arr->time[j] < ti) break;
+          if (arr->time[arr->nstart + j] < ti) break;
         }
       }
     } else if (settings->intmethod == SLOWINT) {                                      // Brain-dead slow interpolation, useful if time array isn't sorted
-      for (j = 0; j < arr->npts - 1; j++) {
-        if (arr->time[j + 1] > ti) break;
+      for (j = 0; j < arr->nend - arr->nstart - 1; j++) {
+        if (arr->time[arr->nstart + j + 1] > ti) break;
       }
     } else {
       return ERR_NOT_IMPLEMENTED;
     }
     
-    t0 = arr->time[j];                                                                // Interpolation bounds
-    t1 = arr->time[j + 1];
-    f0 = f[j];
-    f1 = f[j + 1];
+    t0 = arr->time[arr->nstart + j];                                                  // Interpolation bounds
+    t1 = arr->time[arr->nstart + j + 1];
+    f0 = f[arr->nstart + j];
+    f1 = f[arr->nstart + j + 1];
   
     arr->iarr[i] = f0 + (f1 - f0) * (ti - t0) / (t1 - t0);                            // A simple linear interpolation
     
@@ -698,4 +644,9 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
   arr->ipts = ipts;
   
   return iErr;
+
+}
+
+void dbl_free(double *ptr){
+  free(ptr);
 }

@@ -65,6 +65,7 @@ ARR_B       =             9
 
 # Other
 MAXTRANSITS =             500
+MAXPTS      =             10000
 TRANSITSARR =             ctypes.c_double * MAXTRANSITS
 G           =             6.672e-8
 DAYSEC      =             86400.
@@ -175,69 +176,82 @@ class LIMBDARK(ctypes.Structure):
         self.c4 = kwargs.pop('c4', self.c4)
                   
 class ARRAYS(ctypes.Structure):
-      _fields_ = [("npts", ctypes.c_int),
+      _fields_ = [("nstart", ctypes.c_int),
+                  ("nend", ctypes.c_int),
                   ("ipts", ctypes.c_int),
-                  ("_time", ctypes.POINTER(ctypes.c_double)),
-                  ("_flux", ctypes.POINTER(ctypes.c_double)),
-                  ("_bflx", ctypes.POINTER(ctypes.c_double)),
-                  ("_M", ctypes.POINTER(ctypes.c_double)),
-                  ("_E", ctypes.POINTER(ctypes.c_double)),
-                  ("_f", ctypes.POINTER(ctypes.c_double)),
-                  ("_r", ctypes.POINTER(ctypes.c_double)),
-                  ("_x", ctypes.POINTER(ctypes.c_double)),
-                  ("_y", ctypes.POINTER(ctypes.c_double)),
-                  ("_z", ctypes.POINTER(ctypes.c_double)),
-                  ("_b", ctypes.POINTER(ctypes.c_double)),
+                  ("_time", ctypes.c_double * MAXPTS),
+                  ("_flux", ctypes.c_double * MAXPTS),
+                  ("_bflx", ctypes.c_double * MAXPTS),
+                  ("_M", ctypes.c_double * MAXPTS),
+                  ("_E", ctypes.c_double * MAXPTS),
+                  ("_f", ctypes.c_double * MAXPTS),
+                  ("_r", ctypes.c_double * MAXPTS),
+                  ("_x", ctypes.c_double * MAXPTS),
+                  ("_y", ctypes.c_double * MAXPTS),
+                  ("_z", ctypes.c_double * MAXPTS),
+                  ("_b", ctypes.c_double * MAXPTS),
                   ("_iarr", ctypes.POINTER(ctypes.c_double))]
                   
-      def __init__(self, **kwargs):
-        # self.M = as_ctypes(np.zeros(ndata))
-        self.npts = 0
+      def __init__(self, **kwargs):        
+        self._time = as_ctypes(np.zeros(MAXPTS))
+        self._flux = as_ctypes(np.zeros(MAXPTS))
+        self._bflx = as_ctypes(np.zeros(MAXPTS))
+        self._M = as_ctypes(np.zeros(MAXPTS))
+        self._E = as_ctypes(np.zeros(MAXPTS))
+        self._f = as_ctypes(np.zeros(MAXPTS))
+        self._r = as_ctypes(np.zeros(MAXPTS))
+        self._x = as_ctypes(np.zeros(MAXPTS))
+        self._y = as_ctypes(np.zeros(MAXPTS))
+        self._z = as_ctypes(np.zeros(MAXPTS))
+        self._b = as_ctypes(np.zeros(MAXPTS))     
+        
+        self.nstart = 0
+        self.nend = MAXPTS
         self.ipts = 0
       
       @property
       def time(self):
-        return np.array([self._time[i] for i in range(self.npts)])
+        return np.array([self._time[i] for i in range(self.nstart, self.nend)])
       
       @property
       def flux(self):
-        return np.array([self._flux[i] for i in range(self.npts)])
+        return np.array([self._flux[i] for i in range(self.nstart, self.nend)])
         
       @property
       def bflx(self):
-        return np.array([self._bflx[i] for i in range(self.npts)])
+        return np.array([self._bflx[i] for i in range(self.nstart, self.nend)])
 
       @property
       def M(self):
-        return np.array([self._M[i] for i in range(self.npts)])
+        return np.array([self._M[i] for i in range(self.nstart, self.nend)])
         
       @property
       def E(self):
-        return np.array([self._E[i] for i in range(self.npts)])
+        return np.array([self._E[i] for i in range(self.nstart, self.nend)])
         
       @property
       def f(self):
-        return np.array([self._f[i] for i in range(self.npts)])
+        return np.array([self._f[i] for i in range(self.nstart, self.nend)])
         
       @property
       def r(self):
-        return np.array([self._r[i] for i in range(self.npts)])
+        return np.array([self._r[i] for i in range(self.nstart, self.nend)])
       
       @property
       def x(self):
-        return np.array([self._x[i] for i in range(self.npts)])
+        return np.array([self._x[i] for i in range(self.nstart, self.nend)])
         
       @property
       def y(self):
-        return np.array([self._y[i] for i in range(self.npts)])
+        return np.array([self._y[i] for i in range(self.nstart, self.nend)])
       
       @property
       def z(self):
-        return np.array([self._z[i] for i in range(self.npts)])
+        return np.array([self._z[i] for i in range(self.nstart, self.nend)])
       
       @property
       def b(self):
-        return np.array([self._b[i] for i in range(self.npts)])
+        return np.array([self._b[i] for i in range(self.nstart, self.nend)])
       
       @property
       def iarr(self):
@@ -248,7 +262,6 @@ class SETTINGS(ctypes.Structure):
                   ("exptime", ctypes.c_double),
                   ("keptol", ctypes.c_double),
                   ("fullorbit", ctypes.c_int),
-                  ("maxpts", ctypes.c_int),
                   ("exppts", ctypes.c_int),
                   ("binmethod", ctypes.c_int),
                   ("intmethod", ctypes.c_int),
@@ -261,7 +274,6 @@ class SETTINGS(ctypes.Structure):
         self.exptime = KEPLONGEXP
         self.fullorbit = 0
         self.exppts = 50
-        self.maxpts = 10000
         self.binmethod = RIEMANN
         self.intmethod = SMARTINT
         self.keptol = 1.e-15
@@ -277,7 +289,6 @@ class SETTINGS(ctypes.Structure):
         self.exptime = kwargs.pop('exptime', self.exptime)                            # Long cadence integration time
         self.fullorbit = 1 if kwargs.pop('fullorbit', self.fullorbit) else 0          # Compute full orbit or just the transits (default)
         self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over 10 points for binning
-        self.maxpts = kwargs.pop('maxpts', self.maxpts)                               # Maximum length of arrays ( > exp_pts * transit duration / exptime ). Ignored if fullorbit = True
         self.binmethod = kwargs.pop('binmethod', self.binmethod)                      # How to integrate when binning?
         self.intmethod = kwargs.pop('intmethod', self.intmethod)                      # Integration method
         self.keptol = kwargs.pop('keptol', self.keptol)                               # Kepler solver tolerance
@@ -319,6 +330,9 @@ _Interpolate.argtypes = [ndpointer(dtype=ctypes.c_double),
                         ctypes.POINTER(LIMBDARK), ctypes.POINTER(SETTINGS), 
                         ctypes.POINTER(ARRAYS)]
 
+_dbl_free = lib.dbl_free
+_dbl_free.argtypes = [ctypes.POINTER(ctypes.c_double)]
+
 # Error handling
 def RaiseError(err):
   if (err == ERR_NONE):
@@ -327,7 +341,8 @@ def RaiseError(err):
     raise Exception("Option not implemented.")
   elif (err == ERR_MAX_PTS):
     raise Exception("Maximum points in lightcurve exceeded. " + 
-                    "Please increase option `maxpts`.")  
+                    "Try decreasing `exppts`, increasing `exptime`, or recompiling " +
+                    "the code with a larger value for `MAXPTS`.")  
   elif (err == ERR_NO_TRANSIT):
     raise Exception("Object does not transit the star.")  
   elif (err == ERR_BAD_ECC):
@@ -421,7 +436,9 @@ class Transit():
       
     err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, self.arrays)
     if err != ERR_NONE: RaiseError(err)
-    return self.arrays.iarr
+    res = self.arrays.iarr
+    self.Clean()
+    return res
   
   def Compute(self):
     err = _Compute(self.transit, self.limbdark, self.settings, self.arrays)
@@ -430,7 +447,15 @@ class Transit():
   def Bin(self):
     err = _Bin(self.transit, self.limbdark, self.settings, self.arrays)
     if err != ERR_NONE: RaiseError(err)
+  
+  def Clean(self):
+    '''
+    Frees the memory used by the interpolated array.
     
+    '''
+    
+    _dbl_free(self.arrays._iarr)
+  
 if __name__ == '__main__':
   '''
   For debugging only
