@@ -85,22 +85,46 @@ class TRANSIT(ctypes.Structure):
                   ("_tN", TRANSITSARR)]
       
       def __init__(self, **kwargs):
-        self.bcirc = kwargs.pop('bcirc', np.nan)
-        b = kwargs.pop('b', None)
-        if b is not None: self.bcirc = b
-        self.rhos = kwargs.pop('rhos', np.nan)
-        self.MpMs = kwargs.pop('MpMs', np.nan)
-        self.esw = kwargs.pop('esw', np.nan)
-        self.ecw = kwargs.pop('ecw', np.nan)
-        self.per = kwargs.pop('per', np.nan)
-        self.RpRs = kwargs.pop('RpRs', np.nan)
-        self.t0 = kwargs.pop('t0', np.nan)
-        self.ecc = kwargs.pop('ecc', np.nan)
-        self.w = kwargs.pop('w', np.nan)
-        self.aRs = kwargs.pop('aRs', np.nan)
-        self._tN_p = kwargs.pop('tN', [])                                             # The transit times. NOTE: Must be sorted!
+        self.bcirc = np.nan
+        self.rhos = np.nan
+        self.MpMs = np.nan
+        self.esw = np.nan
+        self.ecw = np.nan
+        self.per = np.nan
+        self.RpRs = np.nan
+        self.t0 = np.nan
+        self.ecc = np.nan
+        self.w = np.nan
+        self.aRs = np.nan
+        self._tN_p = []
         self._tN = TRANSITSARR(*self._tN_p)
-        self.ntrans = len(self._tN_p)                                                 # Number of transits; only used if tN is set (i.e., for TTVs)
+        self.ntrans = len(self._tN_p)     
+        self.update(**kwargs)
+        
+      def update(self, **kwargs):
+        '''
+        
+        '''
+        
+        self.bcirc = kwargs.pop('bcirc', self.bcirc)
+        b = kwargs.pop('b', None)
+        if b is not None: 
+          self.bcirc = b
+        self.rhos = kwargs.pop('rhos', self.rhos)
+        self.MpMs = kwargs.pop('MpMs', self.MpMs)
+        self.esw = kwargs.pop('esw', self.esw)
+        self.ecw = kwargs.pop('ecw', self.ecw)
+        self.per = kwargs.pop('per', self.per)
+        self.RpRs = kwargs.pop('RpRs', self.RpRs)
+        self.t0 = kwargs.pop('t0', self.t0)
+        self.ecc = kwargs.pop('ecc', self.ecc)
+        self.w = kwargs.pop('w', self.w)
+        self.aRs = kwargs.pop('aRs', self.aRs)
+        tN = kwargs.pop('tN', None)
+        if tN is not None:
+          self._tN_p = tN                                                             # The transit times. NOTE: Must be sorted!
+          self._tN = TRANSITSARR(*self._tN_p)
+          self.ntrans = len(self._tN_p)                                               # Number of transits; only used if tN is set (i.e., for TTVs)
       
       @property
       def tN(self):
@@ -111,8 +135,7 @@ class TRANSIT(ctypes.Structure):
         self._tN_p = value
         self.ntrans = len(self._tN_p)
         self._tN = TRANSITSARR(*self._tN_p)                                           # The pointer version that gets passed to C
-      
-      
+           
 class LIMBDARK(ctypes.Structure):
       _fields_ = [("ldmodel", ctypes.c_int),
                   ("u1", ctypes.c_double),
@@ -125,15 +148,31 @@ class LIMBDARK(ctypes.Structure):
                   ("c4", ctypes.c_double)]
                   
       def __init__(self, **kwargs):
-        self.ldmodel = kwargs.pop('ldmodel', QUADRATIC)
-        self.u1 = kwargs.pop('u1', np.nan)
-        self.u2 = kwargs.pop('u2', np.nan)
-        self.q1 = kwargs.pop('q1', np.nan)
-        self.q2 = kwargs.pop('q2', np.nan)
-        self.c1 = kwargs.pop('c1', np.nan)
-        self.c2 = kwargs.pop('c2', np.nan)
-        self.c3 = kwargs.pop('c3', np.nan)
-        self.c4 = kwargs.pop('c4', np.nan)
+        self.ldmodel = QUADRATIC
+        self.u1 = np.nan
+        self.u2 = np.nan
+        self.q1 = np.nan
+        self.q2 = np.nan
+        self.c1 = np.nan
+        self.c2 = np.nan
+        self.c3 = np.nan
+        self.c4 = np.nan
+        self.update(**kwargs)
+        
+      def update(self, **kwargs):
+        '''
+        
+        '''
+        
+        self.ldmodel = kwargs.pop('ldmodel', self.ldmodel)
+        self.u1 = kwargs.pop('u1', self.u1)
+        self.u2 = kwargs.pop('u2', self.u1)
+        self.q1 = kwargs.pop('q1', self.q1)
+        self.q2 = kwargs.pop('q2', self.q2)
+        self.c1 = kwargs.pop('c1', self.c1)
+        self.c2 = kwargs.pop('c2', self.c2)
+        self.c3 = kwargs.pop('c3', self.c3)
+        self.c4 = kwargs.pop('c4', self.c4)
                   
 class ARRAYS(ctypes.Structure):
       _fields_ = [("npts", ctypes.c_int),
@@ -218,17 +257,31 @@ class SETTINGS(ctypes.Structure):
                   ("binned", ctypes.c_int)]
       
       def __init__(self, **kwargs):
-        self.cadence = kwargs.pop('cadence', KEPLONGCAD)                              # Long cadence dt
-        self.exptime = kwargs.pop('exptime', KEPLONGEXP)                              # Long cadence integration time
-        fullorbit = kwargs.pop('fullorbit', False)                                    # Compute full orbit or just the transits (default)
-        if fullorbit: self.fullorbit = 1
-        else: self.fullorbit = 0
-        self.exppts = kwargs.pop('exppts', 50)                                        # Average flux over 10 points for binning
-        self.maxpts = kwargs.pop('maxpts', 10000)                                     # Maximum length of arrays ( > exp_pts * transit duration / exptime ). Ignored if fullorbit = True
-        self.binmethod = kwargs.pop('binmethod', RIEMANN)                             # How to integrate when binning?
-        self.intmethod = kwargs.pop('intmethod', SMARTINT)                            # Integration method
-        self.keptol = kwargs.pop('keptol', 1.e-15)                                    # Kepler solver tolerance
-        self.maxkepiter = kwargs.pop('maxkepiter', 100)                               # Maximum number of iterations in Kepler solver
+        self.cadence = KEPLONGCAD
+        self.exptime = KEPLONGEXP
+        self.fullorbit = 0
+        self.exppts = 50
+        self.maxpts = 10000
+        self.binmethod = RIEMANN
+        self.intmethod = SMARTINT
+        self.keptol = 1.e-15
+        self.maxkepiter = 100
+        self.update(**kwargs)
+      
+      def update(self, **kwargs):
+        '''
+        
+        '''
+        
+        self.cadence = kwargs.pop('cadence', self.cadence)                            # Long cadence dt
+        self.exptime = kwargs.pop('exptime', self.exptime)                            # Long cadence integration time
+        self.fullorbit = 1 if kwargs.pop('fullorbit', self.fullorbit) else 0          # Compute full orbit or just the transits (default)
+        self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over 10 points for binning
+        self.maxpts = kwargs.pop('maxpts', self.maxpts)                               # Maximum length of arrays ( > exp_pts * transit duration / exptime ). Ignored if fullorbit = True
+        self.binmethod = kwargs.pop('binmethod', self.binmethod)                      # How to integrate when binning?
+        self.intmethod = kwargs.pop('intmethod', self.intmethod)                      # Integration method
+        self.keptol = kwargs.pop('keptol', self.keptol)                               # Kepler solver tolerance
+        self.maxkepiter = kwargs.pop('maxkepiter', self.maxkepiter)                   # Maximum number of iterations in Kepler solver
         self.computed = 0
         self.binned = 0
 
@@ -313,8 +366,19 @@ class Transit():
   '''
   
   def __init__(self, **kwargs):
+          
+    self.arrays = ARRAYS()
+    self.limbdark = LIMBDARK()
+    self.transit = TRANSIT()
+    self.settings = SETTINGS()
+    self.update(**kwargs)
   
-    valid = [y[0] for x in [TRANSIT, LIMBDARK, ARRAYS, SETTINGS] for y in x._fields_] # List of valid kwargs
+  def update(self, **kwargs):
+    '''
+    
+    '''
+    
+    valid = [y[0] for x in [TRANSIT, LIMBDARK, SETTINGS] for y in x._fields_]         # List of valid kwargs
     valid += ['b', 'tN']                                                              # These are special!
     for k in kwargs.keys():
       if k not in valid:
@@ -325,12 +389,12 @@ class Transit():
     elif ('c1' in kwargs.keys()) and ('c2' in kwargs.keys()) and \
          ('c3' in kwargs.keys()) and ('c4' in kwargs.keys()):
       kwargs.update({'ldmodel': NONLINEAR})
-        
-    self.arrays = ARRAYS(**kwargs)
-    self.limbdark = LIMBDARK(**kwargs)
-    self.transit = TRANSIT(**kwargs)
-    self.settings = SETTINGS(**kwargs)
     
+    self.limbdark.update(**kwargs)
+    self.transit.update(**kwargs)
+    self.settings.update(**kwargs)
+    
+  
   def __call__(self, t, param):
     if param == 'flux':
       array = ARR_FLUX
@@ -361,7 +425,7 @@ class Transit():
   
   def Compute(self):
     err = _Compute(self.transit, self.limbdark, self.settings, self.arrays)
-    if err != ERR_NONE: RaiseError(err)
+    if err != ERR_NONE: RaiseError(err)    
 
   def Bin(self):
     err = _Bin(self.transit, self.limbdark, self.settings, self.arrays)

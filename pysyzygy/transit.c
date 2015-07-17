@@ -457,6 +457,8 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   
   if ((nm == 0) || (np == 0)) return ERR_MAX_PTS;                                     // We didn't reach the edge of the transit within MAXPTS
   if ((nm == settings->maxpts/2) && (np == settings->maxpts/2)) return ERR_NO_TRANSIT;// There's no transit!
+  
+  
   arr->npts = np - nm + 1;                                                            // Populate output arrays
   arr->time = &time[nm];                                                              // Shift the pointer so that we start at the left edge of the transit window
   arr->flux = &flux[nm];
@@ -468,6 +470,36 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   arr->y = &y[nm];
   arr->z = &z[nm];
   arr->b = &b[nm];
+  
+  
+  
+  /*
+  // DEBUG
+  arr->time = time;
+  arr->flux = flux;
+  arr->M = M;
+  arr->E = E;
+  arr->f = f;
+  arr->r = r;
+  arr->x = x;
+  arr->y = y;
+  arr->z = z;
+  arr->b = b;
+  */
+  
+  /*
+  // DEBUG
+  free(arr->time);
+  free(arr->flux);
+  free(arr->M);
+  free(arr->E);
+  free(arr->f);
+  free(arr->r);
+  free(arr->x);
+  free(arr->y);
+  free(arr->z);
+  free(arr->b);
+  */
   
   settings->computed = 1;                                                             // Set the flag
 	return iErr;
