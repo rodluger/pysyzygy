@@ -4,5 +4,6 @@ transit.gif
 pysyzygy/.DS_Store
 pysyzygy/transit.so
 *.pyc
+*.png
 pysyzygy/*.png
 pysyzygy/*.gif

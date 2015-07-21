@@ -291,7 +291,7 @@ for fnum in range(len(tpf)):
   fpix = np.array([f[idx] for f in qdata.field('FLUX')], dtype='float64')
   data[quarter].fsum = np.sum(fpix, axis = 1)
 
-# Actual Lightcurve
+# Actual Lightcurve (1)
 fig = pl.figure()
 fig.set_size_inches(16,4)
 pl.ylabel('Flux (counts)', fontsize = 24)
@@ -314,7 +314,55 @@ time /= max(time)
 fsum -= min(fsum)
 fsum /= max(fsum)
 pl.plot(time, fsum, 'b.')
-fig.savefig('output/real_lc_17.01.png', bbox_inches = 'tight')
+fig.savefig('output/real_lc_17.01a.png', bbox_inches = 'tight')
+
+# Actual Lightcurve (2)
+fig = pl.figure()
+fig.set_size_inches(16,4)
+pl.ylabel('Flux (counts)', fontsize = 24)
+pl.xlabel('Time (days)', fontsize = 24)
+pl.title('What it actually looks like', fontsize = 28)
+pl.ylim(0,1)
+pl.xlim(0,1)
+XKCDify(pl.gca(), xaxis_loc=0, yaxis_loc=0,
+        xaxis_arrow='+-', yaxis_arrow='+-',
+        expand_axes=True, mag = 0.5)
+time = []
+fsum = []
+for chunk in data[:5]:
+  time.extend(chunk.time)
+  fsum.extend(chunk.fsum)
+time = np.array(time)
+fsum = np.array(fsum)
+time -= min(time)
+time /= max(time)
+fsum -= min(fsum)
+fsum /= max(fsum)
+pl.plot(time, fsum, 'b.')
+fig.savefig('output/real_lc_17.01b.png', bbox_inches = 'tight')
+
+# Actual Lightcurve (3)
+fig = pl.figure()
+fig.set_size_inches(16,4)
+pl.ylabel('Flux (counts)', fontsize = 24)
+pl.xlabel('Time (days)', fontsize = 24)
+pl.title('What it actually looks like', fontsize = 28)
+pl.ylim(0,1)
+pl.xlim(0,1)
+XKCDify(pl.gca(), xaxis_loc=0, yaxis_loc=0,
+        xaxis_arrow='+-', yaxis_arrow='+-',
+        expand_axes=True, mag = 0.5)
+time = data[0].time
+fsum = data[0].fsum
+time = np.array(time)
+fsum = np.array(fsum)
+time -= min(time)
+time /= max(time)
+fsum -= min(fsum)
+fsum /= max(fsum)
+pl.plot(time, fsum, 'b.')
+pl.plot(time, fsum, 'b-', alpha = 0.1)
+fig.savefig('output/real_lc_17.01c.png', bbox_inches = 'tight')
 
 # Expected Lightcurve
 trn = Transit(per = np.pi/2., t0 = 0.9, q1 = 0.5, 
