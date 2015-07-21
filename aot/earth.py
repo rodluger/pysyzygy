@@ -50,17 +50,20 @@ for fnum in range(len(tpf)):
 
 # Expected?
 trn = Transit(per = 5., t0 = 0., q1 = 0.5, 
-              q2 = 0.5, MpMs = 0.01, RpRs = 0.2, 
+              q2 = 0.5, MpMs = 0.01, RpRs = 0.1, 
               bcirc = 0.2, ecw = 0., 
               esw = 0., rhos = 1.4)
-time = np.linspace(0, 50, 1000)
+time = np.linspace(-1, 1, 1000)
 tmod = trn(time, 'binned')
 fig = pl.figure()
 fig.set_size_inches(12,4)
-pl.plot(time, tmod, 'b.')
+pl.plot(trn.arrays.x, trn.arrays.y, 'b.')
 pl.ylabel('Flux (counts)', fontsize = 24)
 pl.xlabel('Time (days)', fontsize = 24)
 pl.title('The ideal lightcurve', fontsize = 28)
+
+pl.show(); quit()
+
 fig.savefig('output/ideal_lc.png', bbox_inches = 'tight')
 
 # Actual

@@ -9,5 +9,5 @@
 #PBS -o /gscratch/vsm/rodluger/aot/stdout.txt
 #PBS -e /gscratch/vsm/rodluger/aot/stderr.txt
 #
-cd ~/src/pysyzygy
+cd ~/src/pysyzygy/aot
 mpiexec -np 64 python grid.py
