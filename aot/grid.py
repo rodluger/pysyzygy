@@ -7,7 +7,7 @@ grid.py
 
 Produce a grid of orbits for my AoT talk on July 22, 2015. Tailored to Hyak.
 Once all the PNGs have been generated, run
->>> ffmpeg -framerate 100 -i %03d.png -vcodec mpeg4 -b:v 10000k video.mp4
+>>> ffmpeg -framerate 100 -i %04d.png -vcodec mpeg4 -b:v 10000k video.mp4
 
 '''
 
@@ -35,7 +35,7 @@ kw = [{'RpRs': 0.5,  'ecc': 0.1, 'w': 1.0,
       {'RpRs': 0.5,  'ecc': 0.2, 'w': 1.9,  
        'image_map': 'jupiter', 'starcolor': (1.0, 0.65, 0.1),  'b': 1.9},
       {'RpRs': 0.45, 'ecc': 0.,  'w': 0,    
-       'image_map': 'jupiter', 'starcolor': (0.9, 0.85, 0.1), 'b': 0.2},
+       'image_map': 'neptune', 'starcolor': (0.9, 0.85, 0.1), 'b': 0.2},
       {'RpRs': 0.1,  'ecc': 0.,  'w': 0,    
        'image_map': 'neptune', 'starcolor': (1.0, 0.35, 0.1), 'b': 1.5}]
 M0 = [1.3, 2.0, 0.0, 1.0, 4.0, 1.5, 5.8, 0.5, 3.3]
@@ -56,7 +56,7 @@ def plot(args):
     ps.PlotImage(per = 0.5, u1 = 1., u2 = 0., bkgimage = 'stars', ax = axis, long0 = long0,
                  rhos = 1.0, xlims = (-5,5), ylims = (-3,3), trail = True, 
                  M = M, **kwargs)
-  fig.savefig(path + '%03d.png' % f, facecolor = 'black', bbox_inches = 'tight')
+  fig.savefig(path + '%04d.png' % f, facecolor = 'black', bbox_inches = 'tight')
   pl.close()
 
 # Set up parallel processing

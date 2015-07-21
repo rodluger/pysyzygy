@@ -1,4 +1,5 @@
 # TODO: Make npts a user option; make arrays dynamically allocated
+# TODO: Fix zero eccentricity issues!
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
@@ -117,10 +118,15 @@ class TRANSIT(ctypes.Structure):
         self.MpMs = kwargs.pop('MpMs', self.MpMs)
         self.esw = kwargs.pop('esw', self.esw)
         self.ecw = kwargs.pop('ecw', self.ecw)
+        if self.esw == 0. and self.ecw == 0.:                                         # DEBUG: Fix this
+          self.esw = 1.e-10
+          self.ecw = 1.e-10
         self.per = kwargs.pop('per', self.per)
         self.RpRs = kwargs.pop('RpRs', self.RpRs)
         self.t0 = kwargs.pop('t0', self.t0)
         self.ecc = kwargs.pop('ecc', self.ecc)
+        if self.ecc == 0.:
+          self.ecc = 1.e-10
         self.w = kwargs.pop('w', self.w)
         self.aRs = kwargs.pop('aRs', self.aRs)
         tN = kwargs.pop('tN', None)

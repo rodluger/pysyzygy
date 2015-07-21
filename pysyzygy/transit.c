@@ -299,7 +299,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
              (1. + ecc * cos(fi)) - 2. / sqrt(1. - ecc * ecc) * 
              atan2(sqrt(1. - ecc * ecc) * tan(fi/2.), 1. + ecc));                     // Time of pericenter passage (Shields et al. 2015)
   } else {
-    tperi0 = 0;
+    tperi0 = 0.;
   }
 
   omega = 1. - u1/3. - u2/6.;                                                         // See Mandel and Agol (2002)
