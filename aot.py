@@ -15,25 +15,9 @@ import matplotlib.pyplot as pl
 import numpy as np
 import sys
 from emcee.utils import MPIPool
+
+# Define some stuff
 path = '/gscratch/vsm/rodluger/aot/'
-
-# Set up parallel processing
-try:
-  pool = MPIPool()
-  MAP = pool.map
-  mpi = True
-except:
-  pool = None
-  MAP = map
-  mpi = False
-if mpi:  
-  if not pool.is_master():
-    pool.wait()                                                                       
-    sys.exit(0)
-
-# PLOT 1: A grid of 9 planet orbits, only one of which is a transit
-nsteps = 500
-dpy = 4
 kw = [{'per': 0.50, 'RpRs': 0.5,  'ecc': 0.1, 'w': 1.0,  
        'image_map': 'earth', 'starcolor': (1.0, 0.85, 0.1), 'b': 2.0},
       {'per': 0.50, 'RpRs': 0.25, 'ecc': 0.2, 'w': 0.,   
@@ -53,10 +37,7 @@ kw = [{'per': 0.50, 'RpRs': 0.5,  'ecc': 0.1, 'w': 1.0,
       {'per': 0.50, 'RpRs': 0.1,  'ecc': 0.,  'w': 0,    
        'image_map': 'jupiter', 'starcolor': (0.9, 0.95, 0.1),'b': 1.5}]
 M0 = [1.3, 2.0, 0.0, 1.0, 4.0, 1.5, 5.8, 0.5, 3.3]
-frames = range(nsteps)
-M = np.linspace(0,2*np.pi,nsteps,endpoint=False)
-rotation = (np.linspace(0, -dpy, nsteps) % 1)*360 - 180
-input = zip(frames, M, rotation)
+
 def plot(args):
   '''
   Plot a grid of planet orbits.
@@ -73,6 +54,28 @@ def plot(args):
                  M = (M + m) % (2*np.pi), **kwargs)
   fig.savefig(path + '%03d.png' % f, facecolor = 'black', bbox_inches = 'tight')
   pl.close()
+
+# Set up parallel processing
+try:
+  pool = MPIPool()
+  MAP = pool.map
+  mpi = True
+except:
+  pool = None
+  MAP = map
+  mpi = False
+if mpi:  
+  if not pool.is_master():
+    pool.wait()                                                                       
+    sys.exit(0)
+
+# PLOT 1: A grid of 9 planet orbits, only one of which is a transit
+nsteps = 500
+dpy = 4
+frames = range(nsteps)
+M = np.linspace(0,2*np.pi,nsteps,endpoint=False)
+rotation = (np.linspace(0, -dpy, nsteps) % 1)*360 - 180
+input = zip(frames, M, rotation)
 MAP(plot, input)
 if mpi:
   pool.close()
