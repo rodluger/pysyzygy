@@ -43,11 +43,11 @@ class SphericalProjection(object):
         # Change range to [0, np.pi]
         try:
             phi[phi < 0] += 2*np.pi
-        except IndexError:
+        except:
             if phi < 0: phi += 2*np.pi
         try:
             theta[theta < 0] += 2*np.pi
-        except IndexError:
+        except:
             if theta < 0: theta += 2*np.pi
   
         # Normalize to source image
