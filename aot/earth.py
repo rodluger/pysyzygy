@@ -1,6 +1,7 @@
 import kplr
 import numpy as np
 import matplotlib.pyplot as pl
+from pysyzygy import Transit
 
 class Chunk(object):
   '''
@@ -47,7 +48,28 @@ for fnum in range(len(tpf)):
   fpix = np.array([f[idx] for f in qdata.field('FLUX')], dtype='float64')
   data[quarter].fsum = np.sum(fpix, axis = 1)
 
-for chunk in data:
-  pl.plot(chunk.time, chunk.fsum)
+# Expected?
+trn = Transit(per = 5., t0 = 0., q1 = 0.5, 
+              q2 = 0.5, MpMs = 0.01, RpRs = 0.2, 
+              bcirc = 0.2, ecw = 0., 
+              esw = 0., rhos = 1.4)
+time = np.linspace(0, 50, 1000)
+tmod = trn(time, 'binned')
+fig = pl.figure()
+fig.set_size_inches(12,4)
+pl.plot(time, tmod, 'b.')
+pl.ylabel('Flux (counts)', fontsize = 24)
+pl.xlabel('Time (days)', fontsize = 24)
+pl.title('The ideal lightcurve', fontsize = 28)
+fig.savefig('output/ideal_lc.png', bbox_inches = 'tight')
 
-pl.show()
+# Actual
+fig = pl.figure()
+fig.set_size_inches(12,4)
+for chunk in data:
+  pl.plot(chunk.time, chunk.fsum, 'b.')
+pl.ylim(64000,72000)
+pl.ylabel('Flux (counts)', fontsize = 24)
+pl.xlabel('Time (days)', fontsize = 24)
+pl.title('What it actually looks like', fontsize = 28)
+fig.savefig('output/real_lc_17.01.png', bbox_inches = 'tight')
