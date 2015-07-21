@@ -9,9 +9,10 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 from PIL import Image, ImageOps
 import proj
+from pysyzygy import PSZGPATH
 
 class Planet(object):
-    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1, image_map='maps/earth.jpg', night_alpha = 0.35):
+    def __init__(self, albedo=1, resolution=1000, RpRs = 0.1, image_map='earth', night_alpha = 0.35):
         '''
         Parameters
         ----------
@@ -30,7 +31,7 @@ class Planet(object):
         self.dims = (resolution, resolution)
         self.albedo = albedo
         self.image_generated = False
-        self.image_map = image_map
+        self.image_map = PSZGPATH + '/pysyzygy/maps/' + image_map + '.jpg'
         self.night_alpha = night_alpha
 
     def vector_length(self, vector):
@@ -103,7 +104,7 @@ class Planet(object):
         dir_observer_x = (self.observer[0] - x[planet_disk]) / distance_observer
         dir_observer_y = (self.observer[1] - y[planet_disk]) / distance_observer
         dir_observer_z = (self.observer[2] - z[planet_disk]) / distance_observer
-
+        
         self.image[(d_star <= d_star_centroid) * (d_star != 0)] += self.albedo
 
         dir_star_x = (s_centroid[0] - x[planet_disk]) / d_star[planet_disk]

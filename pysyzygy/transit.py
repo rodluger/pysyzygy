@@ -1,3 +1,5 @@
+# TODO: Make npts a user option; make arrays dynamically allocated
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''

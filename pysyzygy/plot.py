@@ -14,6 +14,8 @@ import subprocess
 from PIL import Image
 import planet
 from transit import Transit, QUADRATIC, KIPPING, NONLINEAR
+from pysyzygy import PSZGPATH
+import sys
 
 __all__ = ['PlotTransit', 'PlotImage', 'AnimateImage']
 
@@ -67,7 +69,7 @@ def Star(ax, limbdark, x=0, y=0, r=1, n=100, color=(1.0, 0.85, 0.1), zorder=-1):
     star = pl.Circle((x, y), ri*r, color=color, alpha=1., zorder = zorder)
     ax.add_artist(star)
 
-def Planet(ax, x = 0, y = 0, z = 0, r = 0.25, long0 = 0., image_map='maps/earth.jpg'):
+def Planet(ax, x = 0, y = 0, z = 0, r = 0.25, long0 = 0., image_map='earth'):
   '''
   
   '''
@@ -269,9 +271,9 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   pl.close()
 
 def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
-              long0 = 0., image_map = 'maps/earth.jpg', trail = False,
+              long0 = 0., image_map = 'earth', trail = False, ax = None,
               trailpts = 5000, xlims = None, ylims = None, fullplot = False, 
-              **kwargs):
+              lightcurve = False, starcolor = (1.0, 0.85, 0.1), **kwargs):
   '''
   
   '''
@@ -284,7 +286,8 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   
   # Sky-projected motion
   time = trn.arrays.time
-  ti = np.argmax(-np.abs((trn.arrays.M % (2*np.pi)) - M))                             # Find index closest to desired mean anomaly
+  ti = np.argmax(-np.abs(( (trn.arrays.M + 2*np.pi) % (2*np.pi)) - M))                # Find index closest to desired mean anomaly
+
   x = trn.arrays.x
   y = trn.arrays.y
   z = trn.arrays.z
@@ -294,14 +297,22 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   u1 = trn.limbdark.u1
   u2 = trn.limbdark.u2
   
-  # Mask the star
-  for j in range(trn.arrays.npts):
-    if (x[j]**2 + y[j]**2) < 1. and (z[j] > 0):
-      x[j] = np.nan
-      y[j] = np.nan
+  # OBSOLETE: Mask the star
+  #for j in range(trn.arrays.nend - trn.arrays.nstart):
+  #  if (x[j]**2 + y[j]**2) < 1. and (z[j] > 0):
+  #    x[j] = np.nan
+  #    y[j] = np.nan
 
-  fig = pl.figure()                                                                   # fig = pl.figure(figsize=(298./100, 218./100), dpi=100)
-  ax = pl.subplot(111)
+  if ax is None:
+    fig = pl.figure()                                                                 # fig = pl.figure(figsize=(298./100, 218./100), dpi=100)
+    if not lightcurve:
+      ax = pl.subplot(111)
+    else:
+      ax = pl.subplot2grid((4, 1), (0, 0), rowspan=3)
+      lc = pl.subplot2grid((4, 1), (3, 0), sharex=ax)
+      fig.subplots_adjust(hspace = 0.05)
+  else:
+    fig = None
   
   if fullplot:
     xmin = min(-2.5, np.nanmin(x) - 5*RpRs)
@@ -327,7 +338,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   ax.set_aspect('equal')
   
   if bkgimage is not None:
-    im = Image.open(bkgimage)
+    im = Image.open(PSZGPATH + '/pysyzygy/maps/' + bkgimage + '.jpg')
     ax.imshow(im, extent=(xmin,xmax,ymin,ymax), zorder=-99)
   else:
     ax.patch.set_facecolor(bkgcolor)
@@ -336,7 +347,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
     zorder = -2
   else: 
     zorder = 2
-  Star(ax, trn.limbdark, zorder = zorder)
+  Star(ax, trn.limbdark, zorder = zorder, color = starcolor)
   Planet(ax, x = x[ti], y = y[ti], z = z[ti], r = RpRs, long0 = long0, 
          image_map=image_map)
   
@@ -345,31 +356,68 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
   
   ax.axis('off')
   
+  if lightcurve:
+    f = trn.arrays.flux
+    t = trn.arrays.time
+    t = t - t[np.argmin(f)] + kwargs['per']/2.
+    t = t % kwargs['per']                                                             # Fold it
+    
+    t = (t - t[np.argmin(t)])/(t[np.argmax(t)] - t[np.argmin(t)])                     # Normalize to [0,1]
+    xmin, xmax = ax.get_xlim()                                                        # Normalize to top plot axes
+    t *= (xmax - xmin)
+    t += xmin
+    
+    t[np.argmax(t)] = np.nan
+    lc.plot(t, f, '-', color="#4682b4", lw = 5, alpha = 0.75)
+    
+    lc.plot(t[ti], f[ti], 'wo', markersize = 10)
+    lc.xaxis.set_visible(False)
+    lc.yaxis.set_visible(False)
+    
+    ymax = f[np.argmax(f)]
+    ymin = f[np.argmin(f)]
+    yrng = ymax - ymin
+    ymax += 0.1*yrng
+    ymin -= 0.1*yrng
+    lc.set_ylim(ymin, ymax)
+    
+    lc.patch.set_facecolor('black')
+    
   return fig, ax
 
 def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
-                 image_map = 'maps/earth.jpg', trail = True,
+                 image_map = 'earth', trail = True,
                  nsteps = 1000, dpy = 4, delay = 3, plotname = 'transit', 
-                 xlims = None, ylims = None, resize = None, **kwargs):
+                 xlims = None, ylims = None, resize = None, 
+                 size_inches = None, starcolor = (1.0, 0.85, 0.1), **kwargs):
   '''
   Note that dpy (= days_per_year) can be set negative for retrograde rotation
   
   '''
   subprocess.call(['mkdir', '-p', 'tmp'])
   frames = range(nsteps)
-  M = np.linspace(0,2*np.pi,nsteps)
+  M = np.linspace(0,2*np.pi,nsteps,endpoint=False)
   rotation = (np.linspace(0, -dpy, nsteps) % 1)*360 - 180
   
   if xlims is not None and ylims is not None: fullplot = False
   else: fullplot = True
   
+  i = 1
   for f, long0 in zip(frames, rotation):
+    sys.stdout.write("\rPlotting image %d/%d..." % (i, nsteps))
+    sys.stdout.flush()
     fig, ax = PlotImage(M = M[f], obl=obl, bkgcolor = bkgcolor, bkgimage = bkgimage,
                         long0 = long0, image_map = image_map, trail = trail,
-                        trailpts = max(500, nsteps), fullplot = fullplot,
+                        trailpts = max(1000, nsteps), fullplot = fullplot,
+                        starcolor = starcolor,
                         xlims = xlims, ylims = ylims, **kwargs)
-    fig.savefig('tmp/%03d.png' % f)
+    if size_inches is not None:
+      fig.set_size_inches(*size_inches)
+      
+    fig.savefig('tmp/%03d.png' % f, bbox_inches = 'tight')
     pl.close()
+    i += 1
+  print ""
   
   # Make gif
   if resize is not None:
@@ -386,4 +434,4 @@ if __name__ == '__main__':
   AnimateImage(per = 0.5, RpRs = 0.5, ecc = 0, rhos = 1.0,
                b = 1.2, u1 = 1., u2 = 0., delay = 1,
                bkgcolor = 'w', nsteps = 100,
-               image_map = 'maps/earth.jpg')
+               image_map = 'earth')
