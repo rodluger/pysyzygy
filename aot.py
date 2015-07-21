@@ -1,4 +1,6 @@
 import multiprocessing
+import matplotlib as mpl
+mpl.use('Agg')
 import pysyzygy as ps
 import matplotlib.pyplot as pl
 import numpy as np
