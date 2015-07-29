@@ -370,7 +370,19 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
     t[np.argmax(t)] = np.nan
     lc.plot(t, f, '-', color="#4682b4", lw = 5, alpha = 0.75)
     
-    lc.plot(t[ti], f[ti], 'wo', markersize = 10)
+    for i in range(ti):
+      if i == ti - 1:
+        alpha = 1.
+        mfc = "#4682b4"
+        mec = 'r'
+        zorder = 100
+      else:
+        alpha = 0.1*max(0., (i - (ti - 500.))/500.)**2
+        mfc = 'r'
+        mec = 'none'
+        zorder = None
+      lc.scatter(t[i], f[i], marker = 'o', s = 200, facecolor = mfc, edgecolor = mec, alpha = alpha, lw = 3, zorder = zorder)
+    
     lc.xaxis.set_visible(False)
     lc.yaxis.set_visible(False)
     
@@ -389,7 +401,8 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
                  image_map = 'earth', trail = True,
                  nsteps = 1000, dpy = 4, delay = 3, plotname = 'transit', 
                  xlims = None, ylims = None, resize = None, 
-                 size_inches = None, starcolor = (1.0, 0.85, 0.1), **kwargs):
+                 size_inches = None, starcolor = (1.0, 0.85, 0.1), delete = True,
+                 **kwargs):
   '''
   Note that dpy (= days_per_year) can be set negative for retrograde rotation
   
@@ -427,7 +440,8 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
     subprocess.call(['convert', '-delay', '%d' % delay, '-loop', '-1', 'tmp/*.png', 
                      '%s.gif' % plotname])
   # Delete pngs
-  subprocess.call(['rm', '-r', 'tmp'])
+  if delete:
+    subprocess.call(['rm', '-r', 'tmp'])
 
 if __name__ == '__main__':
   

@@ -144,6 +144,22 @@ class TRANSIT(ctypes.Structure):
         self._tN_p = value
         self.ntrans = len(self._tN_p)
         self._tN = TRANSITSARR(*self._tN_p)                                           # The pointer version that gets passed to C
+      
+      @property
+      def tdur(self):
+        '''
+        The approximate transit duration.
+        
+        '''
+        ecc = self.ecc if self.ecc is not None else np.sqrt(self.ecw**2 + self.esw**2)
+        aRs = ((G * self.rhos * (1. + self.MpMs) * 
+              (self.per * DAYSEC)**2.) / (3. * np.pi))**(1./3.)
+        inc = np.arccos(self.bcirc/aRs)
+        becc = self.bcirc * (1 - ecc**2)/(1 - self.esw)
+        tdur = self.per / 2. / np.pi * np.arcsin(((1. + self.RpRs)**2 -
+               becc**2)**0.5 / (np.sin(inc) * aRs))
+        tdur *= np.sqrt(1. - ecc**2.)/(1. - self.esw)
+        return tdur
            
 class LIMBDARK(ctypes.Structure):
       _fields_ = [("ldmodel", ctypes.c_int),
