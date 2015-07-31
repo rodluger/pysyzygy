@@ -148,7 +148,7 @@ class TRANSIT(ctypes.Structure):
       @property
       def tdur(self):
         '''
-        The approximate transit duration.
+        The approximate transit duration for the general case of an eccentric orbit
         
         '''
         ecc = self.ecc if self.ecc is not None else np.sqrt(self.ecw**2 + self.esw**2)

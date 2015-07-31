@@ -155,7 +155,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   z = trn.arrays.z
   
   # Mask the star
-  for j in range(trn.arrays.npts):
+  for j in range(len(x)):
     if (x[j]**2 + y[j]**2) < 1. and (z[j] > 0):
       x[j] = np.nan
       y[j] = np.nan
@@ -250,8 +250,8 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
                r'$\rho_\star:$',
                r'$M_p:$',
                r'$R_p:$',
-               r'$u_1:$',
-               r'$u_2:$']
+               r'$q_1:$',
+               r'$q_2:$']
     rtable = [ r'$%.4f\ \mathrm{days}$' % trn.transit.per,
                r'$%.5f$' % trn.transit.ecc,
                r'$%.4f^\circ$' % (np.arccos(trn.transit.bcirc/trn.transit.aRs)*180./np.pi),
@@ -259,8 +259,8 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
                r'$%.5f\ \mathrm{g/cm^3}$' % trn.transit.rhos,
                r'$%.5f\ M_\star$' % trn.transit.MpMs,
                r'$%.5f\ R_\star$' % trn.transit.RpRs,
-               r'$%.5f$' % trn.limbdark.u1,
-               r'$%.5f$' % trn.limbdark.u2]
+               r'$%.5f$' % trn.limbdark.q1,
+               r'$%.5f$' % trn.limbdark.q2]
     yt = 0.875
     for l,r in zip(ltable, rtable):
       ax3.annotate(l, xy=(0.25, yt), xycoords="axes fraction", ha='right', fontsize=16)
