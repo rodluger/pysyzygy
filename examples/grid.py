@@ -5,9 +5,14 @@
 grid.py
 -------
 
-Produce a grid of orbits for my AoT talk on July 22, 2015. Tailored to Hyak.
+Produce a grid of planet orbits, only one of which is a transit. If ``emcee``
+is installed, attempts to use ``emcee.MPIPool()`` for multiprocessing.
+
 Once all the PNGs have been generated, run
+
 >>> ffmpeg -framerate 100 -i %04d.png -vcodec mpeg4 -b:v 10000k video.mp4
+
+to produce an MPEG animation.
 
 '''
 
@@ -16,10 +21,9 @@ import pysyzygy as ps
 import matplotlib.pyplot as pl
 import numpy as np
 import sys
-from emcee.utils import MPIPool
 
 # Define some stuff
-path = '/gscratch/vsm/rodluger/aot/'
+path = ''
 kw = [{'RpRs': 0.5,  'ecc': 0.1, 'w': 1.0,  
        'image_map': 'earth', 'starcolor': (1.0, 0.85, 0.1), 'b': 2.0},
       {'RpRs': 0.25, 'ecc': 0.2, 'w': 0.,   
@@ -53,14 +57,15 @@ def plot(args):
   ax = [x for y in ax for x in y]
   for axis, kwargs, m, p in zip(ax, kw, M0, P):
     M = (((time/p % 1.) * 2 * np.pi) + m) % (2 * np.pi)
-    ps.PlotImage(per = 0.5, u1 = 1., u2 = 0., bkgimage = 'stars', ax = axis, long0 = long0,
-                 rhos = 1.0, xlims = (-5,5), ylims = (-3,3), trail = True, 
-                 M = M, **kwargs)
+    ps.PlotImage(per = 0.5, u1 = 1., u2 = 0., bkgimage = 'stars', ax = axis, 
+                 long0 = long0, rhos = 1.0, xlims = (-5,5), ylims = (-3,3), 
+                 trail = True, M = M, **kwargs)
   fig.savefig(path + '%04d.png' % f, facecolor = 'black', bbox_inches = 'tight')
   pl.close()
 
 # Set up parallel processing
 try:
+  from emcee.utils import MPIPool
   pool = MPIPool()
   MAP = pool.map
   mpi = True
@@ -81,5 +86,6 @@ time = np.linspace(0,1,nsteps,endpoint=False)
 rotation = (np.linspace(0, -dpy, nsteps) % 1)*360 - 180
 input = zip(frames, time, rotation)
 MAP(plot, input)
+
 if mpi:
   pool.close()

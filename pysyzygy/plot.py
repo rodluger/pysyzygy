@@ -219,7 +219,8 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
     ax2.plot(x, y, '-', color='DarkBlue')
   
   # The planet
-  ycenter = y[np.where(np.abs(x) == np.nanmin(np.abs(x)))][0]
+  with np.errstate(invalid = 'ignore'):
+    ycenter = y[np.where(np.abs(x) == np.nanmin(np.abs(x)))][0]
   while ycenter > 0:
     x[np.where(np.abs(x) == np.nanmin(np.abs(x)))] = np.nan
     ycenter = y[np.where(np.abs(x) == np.nanmin(np.abs(x)))][0]
@@ -442,10 +443,3 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
   # Delete pngs
   if delete:
     subprocess.call(['rm', '-r', 'tmp'])
-
-if __name__ == '__main__':
-  
-  AnimateImage(per = 0.5, RpRs = 0.5, ecc = 0, rhos = 1.0,
-               b = 1.2, u1 = 1., u2 = 0., delay = 1,
-               bkgcolor = 'w', nsteps = 100,
-               image_map = 'earth')

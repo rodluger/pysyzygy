@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+'''
+transit_animation.py
+--------------------
+
+A very simple transit animation of Earth in a very short period orbit.
+
+'''
+
 import pysyzygy as ps
 
 # Main animation
