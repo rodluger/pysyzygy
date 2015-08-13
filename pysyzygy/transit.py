@@ -398,6 +398,16 @@ def RaiseError(err):
   else:
     raise Excpetion("Error in transit computation.")
 
+def AddTTVs(tN, ttv_amp = 0.1, ttv_noise = 0.02, ttv_phi = 0., ttv_per = 4.321):
+  '''
+  
+  '''
+  ntrans = len(tN)
+  ttv = ttv_amp * np.sin(ttv_phi + 2 * np.pi / ttv_per * np.array(range(ntrans - 1))) # Perfectly periodic
+  ttv += ttv_noise * np.random.randn(ntrans - 1)                                      # Add white noise      
+  ttv = np.concatenate(([0], ttv))                                                    # First transit is not shifted
+  return tN + ttv
+
 class Transit():
   '''
   A user-friendly wrapper around the ``ctypes`` routines.

@@ -153,6 +153,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   x = trn.arrays.x
   y = trn.arrays.y
   z = trn.arrays.z
+  inc = (np.arccos(trn.transit.bcirc/trn.transit.aRs)*180./np.pi)                     # Orbital inclination
   
   # Mask the star
   for j in range(len(x)):
@@ -255,7 +256,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
                r'$q_2:$']
     rtable = [ r'$%.4f\ \mathrm{days}$' % trn.transit.per,
                r'$%.5f$' % trn.transit.ecc,
-               r'$%.4f^\circ$' % (np.arccos(trn.transit.bcirc/trn.transit.aRs)*180./np.pi),
+               r'$%.4f^\circ$' % inc,
                r'$%.3f^\circ$' % (trn.transit.w*180./np.pi),
                r'$%.5f\ \mathrm{g/cm^3}$' % trn.transit.rhos,
                r'$%.5f\ M_\star$' % trn.transit.MpMs,
