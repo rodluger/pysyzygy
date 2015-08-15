@@ -312,7 +312,7 @@ class SETTINGS(ctypes.Structure):
         self.cadence = kwargs.pop('cadence', self.cadence)                            # Long cadence dt
         self.exptime = kwargs.pop('exptime', self.exptime)                            # Long cadence integration time
         self.fullorbit = 1 if kwargs.pop('fullorbit', self.fullorbit) else 0          # Compute full orbit or just the transits (default)
-        self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over 10 points for binning
+        self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over this many points for binning
         self.binmethod = kwargs.pop('binmethod', self.binmethod)                      # How to integrate when binning?
         self.intmethod = kwargs.pop('intmethod', self.intmethod)                      # Integration method
         self.keptol = kwargs.pop('keptol', self.keptol)                               # Kepler solver tolerance

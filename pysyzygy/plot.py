@@ -13,7 +13,7 @@ from matplotlib.colors import LinearSegmentedColormap, colorConverter
 import subprocess
 from PIL import Image
 import planet
-from transit import Transit, QUADRATIC, KIPPING, NONLINEAR
+from transit import Transit, QUADRATIC, KIPPING, NONLINEAR, MAXPTS
 from pysyzygy import PSZGPATH
 import sys
 
@@ -123,7 +123,6 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   fig.subplots_adjust(hspace=0.3)
   ax1, ax2 = pl.subplot(211), pl.subplot(212)
 
-  kwargs.update({'fullorbit': True})
   t0 = kwargs.pop('t0', 0.)
   trn = Transit(**kwargs)
   trn.Compute()
@@ -135,6 +134,8 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   else:
     flux = trn.arrays.flux
 
+  time = np.concatenate(([-1.e5], time, [1.e5]))                                      # Add baseline on each side
+  flux = np.concatenate(([1.], flux, [1.]))
   ax1.plot(time, flux, '-', color='DarkBlue')
   rng = np.max(flux) - np.min(flux)
   
@@ -142,13 +143,20 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
     ax1.set_ylim(np.min(flux) - 0.1*rng, np.max(flux) + 0.1*rng)
     left = np.argmax(flux < (1. - 1.e-8))
     right = np.argmax(flux[left:] > (1. - 1.e-8)) + left
-    rng = time[right] - time[left]    
+    rng = time[right] - time[left]        
     ax1.set_xlim(time[left] - rng, time[right] + rng)
   
-    
   ax1.set_xlabel('Time (Days)', fontweight='bold')
   ax1.set_ylabel('Normalized Flux', fontweight='bold')
 
+  # Adjust these for full-orbit plotting
+  per = kwargs.get('per')
+  kwargs.update({'fullorbit': True})
+  kwargs.update({'exppts': 30})
+  kwargs.update({'exptime': 50 * per / MAXPTS})
+  trn = Transit(**kwargs)
+  trn.Compute()
+  
   # Sky-projected motion
   x = trn.arrays.x
   y = trn.arrays.y
@@ -217,8 +225,9 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   
   # The orbit itself
   with np.errstate(invalid='ignore'):
-    ax2.plot(x, y, '-', color='DarkBlue')
-  
+    ax2.plot(x, y, '-', color='DarkBlue', lw = 1. if per < 30. else 
+                                               max(1. - (per - 30.) / 100., 0.3) )
+
   # The planet
   with np.errstate(invalid = 'ignore'):
     ycenter = y[np.where(np.abs(x) == np.nanmin(np.abs(x)))][0]

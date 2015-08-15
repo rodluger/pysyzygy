@@ -128,17 +128,17 @@ typedef struct {
   int nstart;
   int nend;
   int ipts;
-  double time[10000];
-  double flux[10000];
-  double bflx[10000];
-  double M[10000];
-  double E[10000];
-  double f[10000];
-  double r[10000];
-  double x[10000];
-  double y[10000];
-  double z[10000];
-  double b[10000];
+  double time[MAXPTS];
+  double flux[MAXPTS];
+  double bflx[MAXPTS];
+  double M[MAXPTS];
+  double E[MAXPTS];
+  double f[MAXPTS];
+  double r[MAXPTS];
+  double x[MAXPTS];
+  double y[MAXPTS];
+  double z[MAXPTS];
+  double b[MAXPTS];
   double *iarr;  
 } ARRAYS;
 
