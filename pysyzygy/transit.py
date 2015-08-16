@@ -151,7 +151,7 @@ class TRANSIT(ctypes.Structure):
         The approximate transit duration for the general case of an eccentric orbit
         
         '''
-        ecc = self.ecc if self.ecc is not None else np.sqrt(self.ecw**2 + self.esw**2)
+        ecc = self.ecc if not np.isnan(self.ecc) else np.sqrt(self.ecw**2 + self.esw**2)
         aRs = ((G * self.rhos * (1. + self.MpMs) * 
               (self.per * DAYSEC)**2.) / (3. * np.pi))**(1./3.)
         inc = np.arccos(self.bcirc/aRs)
