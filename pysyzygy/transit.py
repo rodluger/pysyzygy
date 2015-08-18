@@ -402,9 +402,18 @@ def AddTTVs(tN, ttv_amp = 0.1, ttv_noise = 0.02, ttv_phi = 0., ttv_per = 4.321):
   '''
   
   '''
+  ttv_amp = np.atleast_1d(ttv_amp)
+  ttv_per = np.atleast_1d(ttv_per)
+  if len(ttv_amp) > 1 and ttv_phi == 0.:
+    ttv_phi = np.zeros_like(ttv_amp)
+  ttv_phi = np.atleast_1d(ttv_phi)
+  
   ntrans = len(tN)
-  ttv = ttv_amp * np.sin(ttv_phi + 2 * np.pi / ttv_per * np.array(range(ntrans - 1))) # Perfectly periodic
-  ttv += ttv_noise * np.random.randn(ntrans - 1)                                      # Add white noise      
+  ttv = ttv_noise * np.random.randn(ntrans - 1)                                       # Add white noise      
+
+  for amp, per, phi in zip(ttv_amp, ttv_per, ttv_phi):
+    ttv += amp * np.sin(phi + 2 * np.pi / per * np.array(range(ntrans - 1)))          # Perfectly periodic
+  
   ttv = np.concatenate(([0], ttv))                                                    # First transit is not shifted
   return tN + ttv
 
