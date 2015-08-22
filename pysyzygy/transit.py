@@ -19,34 +19,34 @@ import platform
 from pysyzygy import PSZGPATH
 
 # Define errors
-ERR_NONE             =   0                                                            # We're good!
-ERR_NOT_IMPLEMENTED  =   1                                                            # Function/option not yet implemented
-ERR_MAX_PTS          =   2                                                            # Maximum number of points exceeded in transit. Increase settings.maxpts.
-ERR_KEPLER           =   3                                                            # Error in the Kepler solver; probably didn't converge
-ERR_NO_TRANSIT       =   4                                                            # The planet doesn't transit the star
-ERR_BAD_ECC          =   5                                                            # Bad value for eccentricity
-ERR_RC               =   6                                                            # Error in rc() function
-ERR_RJ               =   7                                                            # Error in rj() function
-ERR_RF               =   8                                                            # Error in rf() function
-ERR_RADIUS           =   9                                                            # Bad input radius
-ERR_EXP_PTS          =   10                                                           # The number of exposure points cannot be odd
-ERR_NOT_COMPUTED     =   11                                                           # User attempted to bin before computing
-ERR_STAR_CROSS       =   12                                                           # Star-crossing orbit
-ERR_PER              =   13                                                           # Bad period
-ERR_RHOS_ARS         =   14                                                           # Must specify either rhos or aRs!
-ERR_RHOS             =   15                                                           # Bad rhos
-ERR_ECC_W            =   16                                                           # Bad eccentricity/omega
-ERR_LD               =   17                                                           # Bad limb darkening coeffs
-ERR_T0               =   18                                                           # Bad t0
+_ERR_NONE             =   0                                                           # We're good!
+_ERR_NOT_IMPLEMENTED  =   1                                                           # Function/option not yet implemented
+_ERR_MAX_PTS          =   2                                                           # Maximum number of points exceeded in transit. Increase settings.maxpts.
+_ERR_KEPLER           =   3                                                           # Error in the Kepler solver; probably didn't converge
+_ERR_NO_TRANSIT       =   4                                                           # The planet doesn't transit the star
+_ERR_BAD_ECC          =   5                                                           # Bad value for eccentricity
+_ERR_RC               =   6                                                           # Error in rc() function
+_ERR_RJ               =   7                                                           # Error in rj() function
+_ERR_RF               =   8                                                           # Error in rf() function
+_ERR_RADIUS           =   9                                                           # Bad input radius
+_ERR_EXP_PTS          =   10                                                          # The number of exposure points cannot be odd
+_ERR_NOT_COMPUTED     =   11                                                          # User attempted to bin before computing
+_ERR_STAR_CROSS       =   12                                                          # Star-crossing orbit
+_ERR_PER              =   13                                                          # Bad period
+_ERR_RHOS_ARS         =   14                                                          # Must specify either rhos or aRs!
+_ERR_RHOS             =   15                                                          # Bad rhos
+_ERR_ECC_W            =   16                                                          # Bad eccentricity/omega
+_ERR_LD               =   17                                                          # Bad limb darkening coeffs
+_ERR_T0               =   18                                                          # Bad t0
 
 # Define models
-QUADRATIC  =              0
-KIPPING    =              1
-NONLINEAR  =              2
-RIEMANN    =              5
-TRAPEZOID  =              6
-SMARTINT   =              7
-SLOWINT    =              8
+_QUADRATIC  =              0
+_KIPPING    =              1
+_NONLINEAR  =              2
+_RIEMANN    =              5
+_TRAPEZOID  =              6
+_SMARTINT   =              7
+_SLOWINT    =              8
 
 # Cadences
 KEPLONGEXP =              (1765.5/86400.)
@@ -55,16 +55,16 @@ KEPSHRTEXP =              (58.89/86400.)
 KEPSHRTCAD =              (60./86400.)
 
 # Array IDs
-ARR_FLUX    =             0
-ARR_BFLX    =             1
-ARR_M       =             2
-ARR_E       =             3
-ARR_F       =             4
-ARR_R       =             5
-ARR_X       =             6
-ARR_Y       =             7
-ARR_Z       =             8
-ARR_B       =             9
+_ARR_FLUX    =             0
+_ARR_BFLX    =             1
+_ARR_M       =             2
+_ARR_E       =             3
+_ARR_F       =             4
+_ARR_R       =             5
+_ARR_X       =             6
+_ARR_Y       =             7
+_ARR_Z       =             8
+_ARR_B       =             9
 
 # Other
 MAXTRANSITS =             500
@@ -173,7 +173,7 @@ class LIMBDARK(ctypes.Structure):
                   ("c4", ctypes.c_double)]
                   
       def __init__(self, **kwargs):
-        self.ldmodel = QUADRATIC
+        self.ldmodel = _QUADRATIC
         self.u1 = np.nan
         self.u2 = np.nan
         self.q1 = np.nan
@@ -298,8 +298,8 @@ class SETTINGS(ctypes.Structure):
         self.exptime = KEPLONGEXP
         self.fullorbit = 0
         self.exppts = 50
-        self.binmethod = RIEMANN
-        self.intmethod = SMARTINT
+        self.binmethod = _RIEMANN
+        self.intmethod = _SMARTINT
         self.keptol = 1.e-15
         self.maxkepiter = 100
         self.update(**kwargs)
@@ -359,41 +359,41 @@ _dbl_free.argtypes = [ctypes.POINTER(ctypes.c_double)]
 
 # Error handling
 def RaiseError(err):
-  if (err == ERR_NONE):
+  if (err == _ERR_NONE):
     return
-  elif (err == ERR_NOT_IMPLEMENTED):
+  elif (err == _ERR_NOT_IMPLEMENTED):
     raise Exception("Option not implemented.")
-  elif (err == ERR_MAX_PTS):
+  elif (err == _ERR_MAX_PTS):
     raise Exception("Maximum points in lightcurve exceeded. " + 
                     "Try decreasing `exppts`, increasing `exptime`, or recompiling " +
                     "the code with a larger value for `MAXPTS`.")  
-  elif (err == ERR_NO_TRANSIT):
+  elif (err == _ERR_NO_TRANSIT):
     raise Exception("Object does not transit the star.")  
-  elif (err == ERR_BAD_ECC):
+  elif (err == _ERR_BAD_ECC):
     raise Exception("Bad value for ``ecc``.")  
-  elif (err == ERR_RC):
+  elif (err == _ERR_RC):
     raise Exception("Error in elliptic integral function RC().")  
-  elif (err == ERR_RJ):
+  elif (err == _ERR_RJ):
     raise Exception("Error in elliptic integral function RJ().") 
-  elif (err == ERR_RF):
+  elif (err == _ERR_RF):
     raise Exception("Error in elliptic integral function RF().") 
-  elif (err == ERR_RADIUS):
+  elif (err == _ERR_RADIUS):
     raise Exception("Bad value for ``RpRs``.") 
-  elif (err == ERR_EXP_PTS):
+  elif (err == _ERR_EXP_PTS):
     raise Exception("The number of exposure points must be even.") 
-  elif (err == ERR_NOT_COMPUTED):
+  elif (err == _ERR_NOT_COMPUTED):
     raise Exception("Lightcurve must be computed before it can be binned.") 
-  elif (err == ERR_STAR_CROSS):
+  elif (err == _ERR_STAR_CROSS):
     raise Exception("Star-crossing orbit.") 
-  elif (err == ERR_RHOS_ARS):
+  elif (err == _ERR_RHOS_ARS):
     raise Exception("Must specify one of ``rhos`` or ``aRs``.") 
-  elif (err == ERR_RHOS):
+  elif (err == _ERR_RHOS):
     raise Exception("Bad value for ``per``.") 
-  elif (err == ERR_ECC_W):
+  elif (err == _ERR_ECC_W):
     raise Exception("Bad value for ``esw`` or ``ecw``.") 
-  elif (err == ERR_LD):
+  elif (err == _ERR_LD):
     raise Exception("Bad value for the limb darkening coefficients.") 
-  elif (err == ERR_T0):
+  elif (err == _ERR_T0):
     raise Exception("Bad value for ``t0``.")
   else:
     raise Excpetion("Error in transit computation.")
@@ -443,10 +443,10 @@ class Transit():
         raise Exception("Invalid kwarg '%s'." % k)  
   
     if ('q1' in kwargs.keys()) and ('q2' in kwargs.keys()):
-      kwargs.update({'ldmodel': KIPPING})
+      kwargs.update({'ldmodel': _KIPPING})
     elif ('c1' in kwargs.keys()) and ('c2' in kwargs.keys()) and \
          ('c3' in kwargs.keys()) and ('c4' in kwargs.keys()):
-      kwargs.update({'ldmodel': NONLINEAR})
+      kwargs.update({'ldmodel': _NONLINEAR})
     
     self.limbdark.update(**kwargs)
     self.transit.update(**kwargs)
@@ -455,41 +455,41 @@ class Transit():
   
   def __call__(self, t, param):
     if param == 'flux':
-      array = ARR_FLUX
+      array = _ARR_FLUX
     elif param == 'binned':
-      array = ARR_BFLX
+      array = _ARR_BFLX
     elif param == 'M':
-      array = ARR_M
+      array = _ARR_M
     elif param == 'E':
-      array = ARR_E
+      array = _ARR_E
     elif param == 'f':
-      array = ARR_F
+      array = _ARR_F
     elif param == 'r':
-      array = ARR_R
+      array = _ARR_R
     elif param == 'x':
-      array = ARR_X
+      array = _ARR_X
     elif param == 'y':
-      array = ARR_Y
+      array = _ARR_Y
     elif param == 'z':
-      array = ARR_Z
+      array = _ARR_Z
     elif param == 'b':
-      array = ARR_B
+      array = _ARR_B
     else:
-      RaiseError(ERR_NOT_IMPLEMENTED)
+      RaiseError(_ERR_NOT_IMPLEMENTED)
       
     err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, self.arrays)
-    if err != ERR_NONE: RaiseError(err)
+    if err != _ERR_NONE: RaiseError(err)
     res = self.arrays.iarr
     self.Clean()
     return res
   
   def Compute(self):
     err = _Compute(self.transit, self.limbdark, self.settings, self.arrays)
-    if err != ERR_NONE: RaiseError(err)    
+    if err != _ERR_NONE: RaiseError(err)    
 
   def Bin(self):
     err = _Bin(self.transit, self.limbdark, self.settings, self.arrays)
-    if err != ERR_NONE: RaiseError(err)
+    if err != _ERR_NONE: RaiseError(err)
   
   def Clean(self):
     '''
@@ -498,74 +498,3 @@ class Transit():
     '''
     
     _dbl_free(self.arrays._iarr)
-  
-if __name__ == '__main__':
-  '''
-  For debugging only
-  
-  '''
-  import matplotlib.pyplot as pl
-  from scipy import interpolate
-  
-  def PlotErrors():
-    arr = ARRAYS()
-    limbdark = LIMBDARK()
-    transit = TRANSIT(ecw = 0.01, esw = 0.01, bcirc = 0.5, RpRs = 0.1, per = 5.0)
-    settings = SETTINGS()
-  
-    # Compute low-res binned lightcurves with different settings
-    t = [[]]*6
-    b = [[]]*6
-    for i, bm, ep in zip(range(6), [RIEMANN, TRAPEZOID]*3, [10, 10, 20, 20, 50, 50]):
-      settings.binmethod=bm
-      settings.exppts=ep
-      _Compute(transit, limbdark, settings, arr)
-      _Bin(transit, limbdark, settings, arr)
-      t[i] = arr.time
-      b[i] = arr.bflx
-  
-    # Compute a high-res binned lightcurve
-    settings.binmethod=RIEMANN
-    settings.maxpts=100000
-    settings.exppts=10000
-    _Compute(transit, limbdark, settings, arr)
-    _Bin(transit, limbdark, settings, arr)
-    B = interpolate.interp1d(arr.time, arr.bflx, bounds_error=False)
-  
-    for i, style, label in zip(range(6), ['r-', 'b-', 'r--', 'b--', 'r-.', 'b-.'], 
-                                         ['R10', 'T10', 'R30', 'T30', 'R50', 'T50']):
-      pl.plot(t[i], np.abs(b[i] - B(t[i])), style, label = label)
-    pl.legend(loc='upper left')
-    pl.yscale('log')
-    pl.xlabel('Time (days)', fontsize=18)
-    pl.ylabel('abs(error)', fontsize=18)
-    pl.show()
-  
-  def PlotInterpolation():  
-    t = np.arange(-2.5,2.5,KEPLONGCAD)
-    t += 0.001 * np.random.randn(len(t))
-
-    trn = Transit(ecw = 0.1, esw = 0.1, bcirc = 0.3, per = 1.3, fullorbit = True)
-    pl.plot(t, trn(t, 'x'), 'r.')
-    pl.show()
-  
-  def DianaTest():
-    import timeit
-    import __builtin__
-    
-    t = np.load("/Users/rod/Desktop/kep35_rod.npz")['t'][:3000]
-    trn = Transit(rhos = 0.25, ecw = 0.0086125, esw = 0.1399, per = 20.7337445, t0 = 132.846716, MpMs = 0.79/0.8877, bcirc = 0.04999, q1 = 0.127, q2 = 0.999, RpRs = 0.818, exppts = 30)
-    
-    def compute():
-      trn = Transit(rhos = 0.25, ecw = 0.0086125, esw = 0.1399, per = 20.7337445, t0 = 132.846716, MpMs = 0.79/0.8877, bcirc = 0.04999, q1 = 0.127, q2 = 0.999, RpRs = 0.818, exppts = 30)
-      trn.Compute()
-      trn.Bin()
-    
-    __builtin__.__dict__.update(locals())
-    print timeit.timeit('compute()', number=100)/100
-    
-    pl.plot(t, trn(t, 'binned'), 'r.')
-
-    pl.show()
-  
-  DianaTest()
