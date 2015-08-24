@@ -116,7 +116,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   '''
     
   '''
-    
+
   # Plotting
   fig = pl.figure()
   fig.set_size_inches(12,8)
@@ -125,26 +125,34 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
 
   t0 = kwargs.pop('t0', 0.)
   trn = Transit(**kwargs)
-  trn.Compute()
+  try:
+    trn.Compute()
+    notransit = False
+  except Exception as e:
+    if str(e) == "Object does not transit the star.":
+      notransit = True
+    else: raise Exception(e)
 
   time = trn.arrays.time + t0
-  if binned:
-    trn.Bin()
-    flux = trn.arrays.bflx
-  else:
-    flux = trn.arrays.flux
-
-  time = np.concatenate(([-1.e5], time, [1.e5]))                                      # Add baseline on each side
-  flux = np.concatenate(([1.], flux, [1.]))
-  ax1.plot(time, flux, '-', color='DarkBlue')
-  rng = np.max(flux) - np.min(flux)
   
-  if rng > 0:
-    ax1.set_ylim(np.min(flux) - 0.1*rng, np.max(flux) + 0.1*rng)
-    left = np.argmax(flux < (1. - 1.e-8))
-    right = np.argmax(flux[left:] > (1. - 1.e-8)) + left
-    rng = time[right] - time[left]        
-    ax1.set_xlim(time[left] - rng, time[right] + rng)
+  if not notransit:
+    if binned:
+      trn.Bin()
+      flux = trn.arrays.bflx
+    else:
+      flux = trn.arrays.flux
+
+    time = np.concatenate(([-1.e5], time, [1.e5]))                                    # Add baseline on each side
+    flux = np.concatenate(([1.], flux, [1.]))
+    ax1.plot(time, flux, '-', color='DarkBlue')
+    rng = np.max(flux) - np.min(flux)
+  
+    if rng > 0:
+      ax1.set_ylim(np.min(flux) - 0.1*rng, np.max(flux) + 0.1*rng)
+      left = np.argmax(flux < (1. - 1.e-8))
+      right = np.argmax(flux[left:] > (1. - 1.e-8)) + left
+      rng = time[right] - time[left]        
+      ax1.set_xlim(time[left] - rng, time[right] + rng)
   
   ax1.set_xlabel('Time (Days)', fontweight='bold')
   ax1.set_ylabel('Normalized Flux', fontweight='bold')
@@ -155,8 +163,14 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   kwargs.update({'exppts': 30})
   kwargs.update({'exptime': 50 * per / MAXPTS})
   trn = Transit(**kwargs)
-  trn.Compute()
   
+  try:
+    trn.Compute()
+  except Exception as e:
+    if str(e) == "Object does not transit the star.":
+      pass
+    else: raise Exception(e)
+
   # Sky-projected motion
   x = trn.arrays.x
   y = trn.arrays.y
@@ -198,7 +212,12 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
     inset2 = fig.add_axes([0.925,0.1,0.2,0.15])
   pl.setp(inset2, xticks=[], yticks=[])
   trn.transit.bcirc = trn.transit.aRs                                                 # This ensures we are face-on
-  trn.Compute()
+  try:
+    trn.Compute()
+  except Exception as e:
+    if str(e) == "Object does not transit the star.":
+      pass
+    else: raise Exception(e)
   xp = trn.arrays.x
   yp = trn.arrays.y
   inset2.plot(xp, yp, '-', color='DarkBlue', alpha=0.5)

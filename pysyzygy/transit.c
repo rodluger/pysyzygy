@@ -279,8 +279,10 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
     if (isnan(transit->ecc)) return ERR_ECC_W;
     if ((transit->ecc != 0) && isnan(transit->w)) 
       return ERR_ECC_W;
-    else 
-      transit->w = 0;                                           
+    else if (transit->ecc == 0)
+      transit->w = 0;
+    else if (isnan(transit->w))
+      return ERR_ECC_W;                           
     if ((transit->ecc < 0) || (transit->ecc >= 1)) return ERR_ECC_W;
     if ((transit->w < 0) || (transit->w >= 2 * PI)) return ERR_ECC_W;
     w = transit->w;
@@ -444,8 +446,9 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   }
   
   if ((nm == 0) || (np == 0)) return ERR_MAX_PTS;                                     // We didn't reach the edge of the transit within MAXPTS
-  if ((nm == MAXPTS/2) && (np == MAXPTS/2)) return ERR_NO_TRANSIT;                    // There's no transit!
-  
+  if ((nm >= MAXPTS/2 - settings->exppts/2 - 1) && 
+      (np <= MAXPTS/2 + settings->exppts/2 +  1)) 
+    return ERR_NO_TRANSIT;                                                            // There's no transit!
   arr->nstart = nm;                                                                   // first index
   arr->nend = np + 1;                                                                 // one plus last index
   settings->computed = 1;                                                             // Set the flag

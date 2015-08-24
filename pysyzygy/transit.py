@@ -476,7 +476,7 @@ class Transit():
       array = _ARR_B
     else:
       RaiseError(_ERR_NOT_IMPLEMENTED)
-      
+    
     err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, self.arrays)
     if err != _ERR_NONE: RaiseError(err)
     res = self.arrays.iarr
