@@ -435,11 +435,12 @@ class Transit():
     
     '''
     
-    valid = [y[0] for x in [TRANSIT, LIMBDARK, SETTINGS] for y in x._fields_]         # List of valid kwargs
-    valid += ['b', 'tN']                                                              # These are special!
-    for k in kwargs.keys():
-      if k not in valid:
-        raise Exception("Invalid kwarg '%s'." % k)  
+    if kwargs.get('verify_kwargs', True):
+      valid = [y[0] for x in [TRANSIT, LIMBDARK, SETTINGS] for y in x._fields_]       # List of valid kwargs
+      valid += ['b', 'tN']                                                            # These are special!
+      for k in kwargs.keys():
+        if k not in valid:
+          raise Exception("Invalid kwarg '%s'." % k)  
   
     if ('q1' in kwargs.keys()) and ('q2' in kwargs.keys()):
       kwargs.update({'ldmodel': _KIPPING})
