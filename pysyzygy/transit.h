@@ -143,8 +143,7 @@ typedef struct {
 } ARRAYS;
 
 typedef struct {
-  double cadence;
-  double exptime;
+  double exp_time;
   double keptol;
   int fullorbit;
   int exppts;

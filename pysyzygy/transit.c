@@ -196,7 +196,7 @@ double TrueAnomaly(double E, double ecc) {
                          pow(1. - ecc, 0.5) * cos(E / 2.));
 }
 
-double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter) {
+double EccentricAnomalyBugged(double dMeanA, double dEcc, double tol, int maxiter) {
   /* 
       Adapted from Russell Deitrick, based on Murray & Dermott 
   */
@@ -208,6 +208,9 @@ double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter) {
   if (dEcc == 0.) return dMeanA;                                                      // The trivial circular case
   dEccA = dMeanA + sgn(sin(dMeanA))*0.85*dEcc;
   
+  // BUG BUG BUG: WHY IS THIS NECESSARY?
+  if (dMeanA > 0) dEccA = dMeanA - sgn(sin(dMeanA))*0.85*dEcc;
+
   while (di_3 > tol) {
     fi = dEccA - dEcc*sin(dEccA) - dMeanA;
     fi_1 = 1.0 - dEcc*cos(dEccA);
@@ -222,6 +225,19 @@ double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter) {
   }
   
   return dEccA;
+}
+
+double EccentricAnomaly(double M, double e, double tol, int maxiter) {
+  /*  
+  A simpler version of the Kepler solver, borrowed form
+  https://github.com/lkreidberg/batman/blob/master/c_src/_rsky.c
+  */
+  
+  double E = M, eps = 1.0e-7;
+
+	while(fabs(E - e*sin(E) - M) > eps) E = E - (E - e*sin(E) - M)/(1.0 - e*cos(E));
+	return E;
+	
 }
 
 int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr){
@@ -295,6 +311,11 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
     transit->w = w;
   }
   
+  // IMPORTANT: My definition of omega in the equations below is apparently
+  // off by 180 degrees from Laura Kreidberg's in BATMAN. This isn't elegant,
+  // but the two models agree now that I added the following line:
+  w = w - PI;
+  
   if (ecc > 0.) {
     fi = (3. * PI / 2.) - w;                                                          // True anomaly at transit center (Shields et al. 2015)
     tperi0 = per * sqrt(1. - ecc * ecc) / (2. * PI) * (ecc * sin(fi) / 
@@ -305,7 +326,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   }
 
   omega = 1. - u1/3. - u2/6.;                                                         // See Mandel and Agol (2002)
-  dt = settings->exptime / settings->exppts;                                          // The time step
+  dt = settings->exp_time / settings->exppts;                                         // The time step
   
   for (s = -1; s <= 1; s+=2) {                                                        // Sign: -1 or +1
     t = 0.;
@@ -336,7 +357,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       t += s*dt;                                                                      // Increment the time
       
       if (!settings->fullorbit) {                                                     // We're only calculating stuff during transit
-        if (arr->b[i] > 1. + RpRs) {                                                  // Check if we're done transiting
+        if ((arr->b[i] > 1. + RpRs) || (arr->z[i] > 0)) {                             // Check if we're done transiting, or if it's a secondary eclipse (which we ignore)
           arr->flux[i] = 1.;                                                          // That's easy!
           if (s == -1) {
             nm = i;                                                                   // We're going to truncate the array at this index on the left
@@ -615,7 +636,7 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
     // Now we find [j, j + 1], the indices bounding the data point
     
     if (settings->intmethod == SMARTINT) {                                            // Increment j intelligently. NOTE: time array must be sorted!
-      if (j > 0) j += settings->exppts * (t[i] - t[i - 1])/settings->cadence;         
+      if (j > 0) j += settings->exppts * (t[i] - t[i - 1])/settings->exp_time;         
       j = j % (arr->nend - arr->nstart);
       
       if (arr->time[arr->nstart + j + 1] <= ti) {                                     // We undershot; let's loop until we get the right index

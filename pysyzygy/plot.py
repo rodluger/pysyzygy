@@ -161,7 +161,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   per = kwargs.get('per')
   kwargs.update({'fullorbit': True})
   kwargs.update({'exppts': 30})
-  kwargs.update({'exptime': 50 * per / MAXPTS})
+  kwargs.update({'exp_time': 50 * per / MAXPTS})
   trn = Transit(**kwargs)
   
   try:
@@ -310,7 +310,7 @@ def PlotImage(M=0., obl=0., bkgcolor = 'white', bkgimage = None,
 
   kwargs.update({'fullorbit': True})
   if trail:
-    kwargs.update({'exppts': 10, 'exptime': 10 * kwargs['per'] / trailpts})
+    kwargs.update({'exppts': 10, 'exp_time': 10 * kwargs['per'] / trailpts})
   trn = Transit(**kwargs)
   trn.Compute()
   

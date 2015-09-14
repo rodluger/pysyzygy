@@ -282,8 +282,7 @@ class ARRAYS(ctypes.Structure):
         return np.array([self._iarr[i] for i in range(self.ipts)])
              
 class SETTINGS(ctypes.Structure):
-      _fields_ = [("cadence", ctypes.c_double),
-                  ("exptime", ctypes.c_double),
+      _fields_ = [("exp_time", ctypes.c_double),
                   ("keptol", ctypes.c_double),
                   ("fullorbit", ctypes.c_int),
                   ("exppts", ctypes.c_int),
@@ -294,8 +293,7 @@ class SETTINGS(ctypes.Structure):
                   ("binned", ctypes.c_int)]
       
       def __init__(self, **kwargs):
-        self.cadence = KEPLONGCAD
-        self.exptime = KEPLONGEXP
+        self.exp_time = KEPLONGEXP
         self.fullorbit = 0
         self.exppts = 50
         self.binmethod = _RIEMANN
@@ -309,8 +307,7 @@ class SETTINGS(ctypes.Structure):
         
         '''
         
-        self.cadence = kwargs.pop('cadence', self.cadence)                            # Long cadence dt
-        self.exptime = kwargs.pop('exptime', self.exptime)                            # Long cadence integration time
+        self.exp_time = kwargs.pop('exp_time', self.exp_time)                         # Long cadence integration time
         self.fullorbit = 1 if kwargs.pop('fullorbit', self.fullorbit) else 0          # Compute full orbit or just the transits (default)
         self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over this many points for binning
         self.binmethod = kwargs.pop('binmethod', self.binmethod)                      # How to integrate when binning?
@@ -365,7 +362,7 @@ def RaiseError(err):
     raise Exception("Option not implemented.")
   elif (err == _ERR_MAX_PTS):
     raise Exception("Maximum points in lightcurve exceeded. " + 
-                    "Try decreasing `exppts`, increasing `exptime`, or recompiling " +
+                    "Try decreasing `exppts`, increasing `exp_time`, or recompiling "+
                     "the code with a larger value for `MAXPTS`.")  
   elif (err == _ERR_NO_TRANSIT):
     raise Exception("Object does not transit the star.")  
@@ -395,8 +392,10 @@ def RaiseError(err):
     raise Exception("Bad value for the limb darkening coefficients.") 
   elif (err == _ERR_T0):
     raise Exception("Bad value for ``t0``.")
+  elif (err == _ERR_KEPLER):
+    raise Exception("Error in Kepler solver.")
   else:
-    raise Excpetion("Error in transit computation.")
+    raise Exception("Error in transit computation (%d)." % err)
 
 def AddTTVs(tN, ttv_amp = 0.1, ttv_noise = 0.02, ttv_phi = 0., ttv_per = 4.321):
   '''
