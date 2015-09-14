@@ -93,10 +93,6 @@ double rj(double x, double y, double z, double p, int *err) {
   *err = ERR_NONE;
   if (DMIN(DMIN(x,y),z) < 0.0 || DMIN(DMIN(x+y,x+z),DMIN(y+z,fabs(p))) < RJ_TINY   
                               || DMAX(DMAX(x,y),DMAX(z,fabs(p))) > RJ_BIG) {
-    
-    //debug
-    printf("%.5e\t%.5e\t%.5e\t%.5e\n", x, y, z, p);
-    
     *err = ERR_RJ;
     return 0.;    
   }  
@@ -414,50 +410,79 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       } else if ((arr->b[i] > 0.5 + fabs(RpRs - 0.5) && arr->b[i] < 1. + RpRs) || 
                  (RpRs > 0.5 && arr->b[i] > fabs(1. - RpRs) * 
                  1.0001 && arr->b[i] < RpRs)) {                                       // [TWO] The occultor partly occults the star and crosses the limb
-        lam = 0.5 * PI;
-        q = sqrt((1. - x1)/ 4. / arr->b[i] / RpRs);
-        Kk = ellk(q);
-        Ek = ellec(q);
         n = 1./x1 - 1.;
         
-        // When the impact parameter approaches RpRs, x1 tends to zero and
-        // n tends to infinity. The following line prevents overflow when calling rj()
-        // TODO: Verify this.
-        if (1. + n > RJ_BIG) n = RJ_BIG - 1.;
-        
-        Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
-        if (iErr != ERR_NONE) return iErr;
-        lambdad = 1. / 9. / PI / sqrt(RpRs * arr->b[i]) * (((1. - x2) * 
-                  (2. * x2 + x1 - 3.) - 3. * x3 * (x2 - 2.)) * Kk + 4. * 
-                  RpRs * arr->b[i] * ( arr->b[i] * arr->b[i] + 7. * RpRs * RpRs - 4.) 
-                  * Ek - 3. * x3 / x1 * Pk);                                          // Equation (34), lambda_1
-        if (arr->b[i] < RpRs) lambdad += 2./3.;
-        etad = 1. / 2. / PI * (kap1 + RpRs * RpRs * 
-              (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]) * kap0 - 
-              (1. + 5. * RpRs * RpRs + arr->b[i] * arr->b[i]) / 4. * 
-              sqrt((1. - x1) * (x2 - 1.)));                                           // Equation (34), eta_1
-      } else if (RpRs <= 1. && arr->b[i] <= (1. - RpRs) * 1.0001) {                   // [THREE] Occultor is crossing the star
+        if (1. + n > RJ_BIG){
+          // When the impact parameter approaches RpRs, x1 tends to zero and
+          // n tends to infinity. The old approach was to set n = RJ_BIG - 1,
+          // but this introduces its own set of issues. Here instead we use the
+          // equations in Table 3, Case V.
+          // NOTE: TODO: Verify this section. Not yet tested.
+          if (RpRs == 0.5) {
+            lambdad = 1. / 3. - 4. / PI / 9.;
+            etad = 3. / 32.;
+          } else {
+            lam = 0.5 * PI;
+            q = 0.5 / RpRs;
+            Kk = ellk(q);
+            Ek = ellec(q);
+            lambdad = 1. / 3. + 16. * RpRs / 9. / PI * (2. * RpRs * RpRs - 1.) * Ek - 
+                      (32. * pow(RpRs, 4) - 20. * RpRs * RpRs + 3.) / 9. / PI / 
+                      RpRs * Kk;
+            etad = 1. / 2. / PI * (kap1 + RpRs * RpRs * (RpRs * RpRs + 2. * 
+                   arr->b[i] * arr->b[i]) * kap0 - (1. + 5. * RpRs * RpRs + 
+                   arr->b[i] * arr->b[i]) / 4. * sqrt((1. - x1) * (x2 - 1.)));
+          }
+        } else {
+          // Business as usual.
           lam = 0.5 * PI;
-          q = sqrt((x2 - x1) / (1. - x1));
+          q = sqrt((1. - x1)/ 4. / arr->b[i] / RpRs);
           Kk = ellk(q);
           Ek = ellec(q);
-          n = x2 / x1 - 1.;
-          
-          // When the impact parameter approaches RpRs, x1 tends to zero and
-          // n tends to infinity. The next line prevents overflow when calling rj()
-          // TODO: Verify this.
-          if (1. + n > RJ_BIG) n = RJ_BIG - 1.;
-          
           Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
           if (iErr != ERR_NONE) return iErr;
-          lambdad = 2. / 9. / PI / sqrt(1. - x1) * ((1. - 5. * arr->b[i] * 
-                    arr->b[i] + RpRs * RpRs + x3 * x3) * Kk + (1. - x1) * (arr->b[i] 
-                    * arr->b[i] + 7. * RpRs * RpRs - 4.) * Ek - 3. * x3 / x1 * Pk);   // Equation (34), lambda_2   
+          lambdad = 1. / 9. / PI / sqrt(RpRs * arr->b[i]) * (((1. - x2) * 
+                    (2. * x2 + x1 - 3.) - 3. * x3 * (x2 - 2.)) * Kk + 4. * 
+                    RpRs * arr->b[i] * ( arr->b[i] * arr->b[i] + 7. * RpRs * 
+                    RpRs - 4.) * Ek - 3. * x3 / x1 * Pk);                             // Equation (34), lambda_1
           if (arr->b[i] < RpRs) lambdad += 2./3.;
-          if (fabs(RpRs + arr->b[i] - 1.) <= 1.e-4)
-            lambdad = 2. / 3. / PI * acos(1. - 2. * RpRs) - 4. / 9. / PI * 
+          etad = 1. / 2. / PI * (kap1 + RpRs * RpRs * 
+                (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]) * kap0 - 
+                (1. + 5. * RpRs * RpRs + arr->b[i] * arr->b[i]) / 4. * 
+                sqrt((1. - x1) * (x2 - 1.)));                                         // Equation (34), eta_1
+        }
+      } else if (RpRs <= 1. && arr->b[i] <= (1. - RpRs) * 1.0001) {                   // [THREE] Occultor is crossing the star
+          n = x2 / x1 - 1.;
+          
+          if (1. + n > RJ_BIG) {
+            // When the impact parameter approaches RpRs, x1 tends to zero and
+            // n tends to infinity. The old approach was to set n = RJ_BIG - 1,
+            // but this introduces its own set of issues. Here instead we use the
+            // equations in Table 3, Case VI.
+            lam = 0.5 * PI;
+            q = 2. * RpRs;
+            Kk = ellk(q);
+            Ek = ellec(q);
+            lambdad = 1. / 3. + 2. / 9. / PI * (4. * (2. * RpRs * RpRs - 1.) * Ek + 
+                     (1. - 4. * RpRs * RpRs) * Kk);
+            etad = RpRs * RpRs / 2. * (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]);
+          } else {
+            // Business as usual.
+            lam = 0.5 * PI;
+            q = sqrt((x2 - x1) / (1. - x1));
+            Kk = ellk(q);
+            Ek = ellec(q);
+            Pk = Kk - n / 3. * rj(0., 1. - q * q, 1., 1. + n, &iErr);
+            if (iErr != ERR_NONE) return iErr;
+            lambdad = 2. / 9. / PI / sqrt(1. - x1) * ((1. - 5. * arr->b[i] * 
+                      arr->b[i] + RpRs * RpRs + x3 * x3) * Kk + (1. - x1) * (arr->b[i] 
+                      * arr->b[i] + 7. * RpRs * RpRs - 4.) * Ek - 3. * x3 / x1 * Pk); // Equation (34), lambda_2   
+            if (arr->b[i] < RpRs) lambdad += 2./3.;
+            if (fabs(RpRs + arr->b[i] - 1.) <= 1.e-4)
+              lambdad = 2. / 3. / PI * acos(1. - 2. * RpRs) - 4. / 9. / PI * 
                       sqrt(RpRs * (1. - RpRs)) * (3. + 2. * RpRs - 8. * RpRs * RpRs);
-          etad = RpRs * RpRs / 2. * (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]);       // Equation (34), eta_2
+            etad = RpRs * RpRs / 2. * (RpRs * RpRs + 2. * arr->b[i] * arr->b[i]);     // Equation (34), eta_2
+          }
       }
       
       arr->flux[i] = 1. - ((1. - u1 - 2. * u2) * lambdae + (u1 + 2. * u2) * 

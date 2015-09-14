@@ -68,7 +68,7 @@ _ARR_B       =             9
 
 # Other
 MAXTRANSITS =             500
-MAXPTS      =             10000
+MAXPTS      =             100000
 TRANSITSARR =             ctypes.c_double * MAXTRANSITS
 G           =             6.672e-8
 DAYSEC      =             86400.
