@@ -225,11 +225,11 @@ double EccentricAnomalyBugged(double dMeanA, double dEcc, double tol, int maxite
 
 double EccentricAnomaly(double M, double e, double tol, int maxiter) {
   /*  
-  A simpler version of the Kepler solver, borrowed form
+  A simpler version of the Kepler solver, borrowed from
   https://github.com/lkreidberg/batman/blob/master/c_src/_rsky.c
   */
   
-  double E = M, eps = 1.0e-7;
+  double E = M, eps = tol;                                                            // Kreidberg: eps = 1.0e-7;
 
 	while(fabs(E - e*sin(E) - M) > eps) E = E - (E - e*sin(E) - M)/(1.0 - e*cos(E));
 	return E;
