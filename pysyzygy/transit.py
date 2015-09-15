@@ -10,6 +10,10 @@ transit.py
 A ``ctypes`` wrapper around a generalized C implementation of the 
 Mandel & Agol (2002) transit model.
 
+.. todo::
+   - Verify that passing the array of transit times ``tN`` still works!
+   - Funky stuff happening with ``self.t0 = kwargs.pop('t0', self.t0)`` in ``update()``
+   
 '''
 
 import ctypes
@@ -123,7 +127,7 @@ class TRANSIT(ctypes.Structure):
           self.ecw = 1.e-10
         self.per = kwargs.pop('per', self.per)
         self.RpRs = kwargs.pop('RpRs', self.RpRs)
-        self.t0 = kwargs.pop('t0', self.t0)
+        self.t0 = kwargs.pop('t0', self.t0)          
         self.ecc = kwargs.pop('ecc', self.ecc)
         if self.ecc == 0.:
           self.ecc = 1.e-10
@@ -477,7 +481,8 @@ class Transit():
     else:
       RaiseError(_ERR_NOT_IMPLEMENTED)
     
-    err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, self.arrays)
+    err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, 
+                       self.arrays)
     if err != _ERR_NONE: RaiseError(err)
     res = self.arrays.iarr
     self.Clean()
