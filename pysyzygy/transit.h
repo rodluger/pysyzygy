@@ -9,6 +9,8 @@
 #define TRAPEZOID               6
 #define SMARTINT                7
 #define SLOWINT                 8
+#define MDFAST                  9
+#define NEWTON                  10
 
 // Errors
 #define ERR_NONE                0                                                     // We're good!
@@ -152,6 +154,7 @@ typedef struct {
   int maxkepiter;
   int computed;
   int binned;
+  int kepsolver;
 } SETTINGS;
 
 // Functions
@@ -162,6 +165,7 @@ double rj(double x, double y, double z, double p, int *err);
 double rf(double x, double y, double z, int *err);
 double sgn(double x);
 double TrueAnomaly(double E, double ecc);
+double EccentricAnomalyFast(double dMeanA, double dEcc, double tol, int maxiter);
 double EccentricAnomaly(double dMeanA, double dEcc, double tol, int maxiter);
 int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);
 int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr);

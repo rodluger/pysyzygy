@@ -192,35 +192,51 @@ double TrueAnomaly(double E, double ecc) {
                          pow(1. - ecc, 0.5) * cos(E / 2.));
 }
 
-double EccentricAnomalyBugged(double dMeanA, double dEcc, double tol, int maxiter) {
+double EccentricAnomalyFast(double dMeanA, double dEcc, double tol, int maxiter) {
   /* 
-      Adapted from Russell Deitrick, based on Murray & Dermott 
+      Adapted from Rory Barnes, based on Murray & Dermott 
   */
   
   double dEccA;
   double di_1, di_2, di_3 = 1.0, fi, fi_1, fi_2, fi_3;
-  int iter = 0;
+  double lo = -2 * PI;
+  double up = 2 * PI;
+  double next;
+  int iter;
   
   if (dEcc == 0.) return dMeanA;                                                      // The trivial circular case
   dEccA = dMeanA + sgn(sin(dMeanA))*0.85*dEcc;
-  
-  // BUG BUG BUG: WHY IS THIS NECESSARY?
-  if (dMeanA > 0) dEccA = dMeanA - sgn(sin(dMeanA))*0.85*dEcc;
 
-  while (di_3 > tol) {
+  for (iter = 1; iter <= maxiter; iter++) {
     fi = dEccA - dEcc*sin(dEccA) - dMeanA;
+    if (fi > 0)
+      up = dEccA;
+    else
+      lo = dEccA;
     fi_1 = 1.0 - dEcc*cos(dEccA);
     fi_2 = dEcc*sin(dEccA);
     fi_3 = dEcc*cos(dEccA);
     di_1 = -fi / fi_1;
     di_2 = -fi / (fi_1 + 0.5*di_1*fi_2);
     di_3 = -fi / (fi_1 + 0.5*di_2*fi_2 + 1./6.*di_2*di_2*fi_3);
-    dEccA += di_3;
-    iter ++;
-    if (iter > maxiter) return -1.;                                                   // Solver didn't converge
+    next = dEccA + di_3;
+    
+    if (fabs(dEccA - next) < tol) 
+      break;
+      
+    if ((next > lo) && (next < up)) 
+      dEccA = next;
+    else 
+      dEccA = (lo + up) / 2.;
+      
+    if ((fabs(dEccA - lo) < tol) || (fabs(dEccA - up) < tol))
+      break;
   }
   
-  return dEccA;
+  if (iter >= maxiter) 
+    return -1.;                                                                       // Solver didn't converge
+  else
+    return dEccA;
 }
 
 double EccentricAnomaly(double M, double e, double tol, int maxiter) {
@@ -334,8 +350,12 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
       
       arr->time[i] = t;
       arr->M[i] = 2. * PI / per * (arr->time[i] - tperi0);                            // Mean anomaly
-      arr->E[i] = EccentricAnomaly(arr->M[i], ecc, settings->keptol, 
-                                   settings->maxkepiter);                             // Eccentric anomaly
+      if (settings->kepsolver == MDFAST)
+        arr->E[i] = EccentricAnomalyFast(arr->M[i], ecc, settings->keptol, 
+                                         settings->maxkepiter);                       // Eccentric anomaly
+      else
+        arr->E[i] = EccentricAnomaly(arr->M[i], ecc, settings->keptol, 
+                                     settings->maxkepiter);
       if (arr->E[i] == -1) return ERR_KEPLER;
       arr->f[i] = TrueAnomaly(arr->E[i], ecc);                                        // True anomaly
       arr->r[i] = aRs * (1. - ecc * ecc)/(1. + ecc * cos(arr->f[i]));                 // Star-planet separation in units of stellar radius

@@ -44,13 +44,15 @@ _ERR_LD               =   17                                                    
 _ERR_T0               =   18                                                          # Bad t0
 
 # Define models
-_QUADRATIC  =              0
-_KIPPING    =              1
-_NONLINEAR  =              2
-_RIEMANN    =              5
-_TRAPEZOID  =              6
-_SMARTINT   =              7
-_SLOWINT    =              8
+QUADRATIC  =              0
+KIPPING    =              1
+NONLINEAR  =              2
+RIEMANN    =              5
+TRAPEZOID  =              6
+SMARTINT   =              7
+SLOWINT    =              8
+MDFAST     =              9
+NEWTON     =              10
 
 # Cadences
 KEPLONGEXP =              (1765.5/86400.)
@@ -177,7 +179,7 @@ class LIMBDARK(ctypes.Structure):
                   ("c4", ctypes.c_double)]
                   
       def __init__(self, **kwargs):
-        self.ldmodel = _QUADRATIC
+        self.ldmodel = QUADRATIC
         self.u1 = np.nan
         self.u2 = np.nan
         self.q1 = np.nan
@@ -294,16 +296,18 @@ class SETTINGS(ctypes.Structure):
                   ("intmethod", ctypes.c_int),
                   ("maxkepiter", ctypes.c_int),
                   ("computed", ctypes.c_int),
-                  ("binned", ctypes.c_int)]
+                  ("binned", ctypes.c_int),
+                  ("kepsolver", ctypes.c_int)]
       
       def __init__(self, **kwargs):
         self.exp_time = KEPLONGEXP
         self.fullorbit = 0
         self.exppts = 50
-        self.binmethod = _RIEMANN
-        self.intmethod = _SMARTINT
+        self.binmethod = RIEMANN
+        self.intmethod = SMARTINT
         self.keptol = 1.e-15
         self.maxkepiter = 100
+        self.kepsolver = NEWTON
         self.update(**kwargs)
       
       def update(self, **kwargs):
@@ -318,6 +322,7 @@ class SETTINGS(ctypes.Structure):
         self.intmethod = kwargs.pop('intmethod', self.intmethod)                      # Integration method
         self.keptol = kwargs.pop('keptol', self.keptol)                               # Kepler solver tolerance
         self.maxkepiter = kwargs.pop('maxkepiter', self.maxkepiter)                   # Maximum number of iterations in Kepler solver
+        self.kepsolver = kwargs.pop('kepsolver', self.kepsolver)                      # Newton solver or fast M&D solver?
         self.computed = 0
         self.binned = 0
 
@@ -447,10 +452,10 @@ class Transit():
           raise Exception("Invalid kwarg '%s'." % k)  
   
     if ('q1' in kwargs.keys()) and ('q2' in kwargs.keys()):
-      kwargs.update({'ldmodel': _KIPPING})
+      kwargs.update({'ldmodel': KIPPING})
     elif ('c1' in kwargs.keys()) and ('c2' in kwargs.keys()) and \
          ('c3' in kwargs.keys()) and ('c4' in kwargs.keys()):
-      kwargs.update({'ldmodel': _NONLINEAR})
+      kwargs.update({'ldmodel': NONLINEAR})
     
     self.limbdark.update(**kwargs)
     self.transit.update(**kwargs)
