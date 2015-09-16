@@ -1,6 +1,3 @@
-# TODO: Make npts a user option; make arrays dynamically allocated
-# TODO: Fix zero eccentricity issues!
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
@@ -11,6 +8,8 @@ A ``ctypes`` wrapper around a generalized C implementation of the
 Mandel & Agol (2002) transit model.
 
 .. todo::
+   - Make npts a user option; make arrays dynamically allocated
+   - Fix zero eccentricity issues!
    - Verify that passing the array of transit times ``tN`` still works!
    - Funky stuff happening with ``self.t0 = kwargs.pop('t0', self.t0)`` in ``update()``
    

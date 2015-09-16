@@ -13,7 +13,7 @@ from matplotlib.colors import LinearSegmentedColormap, colorConverter
 import subprocess
 from PIL import Image
 import planet
-from transit import Transit, _QUADRATIC, _KIPPING, _NONLINEAR, MAXPTS
+from transit import Transit, QUADRATIC, KIPPING, NONLINEAR, MAXPTS
 from pysyzygy import PSZGPATH
 import sys
 
@@ -25,17 +25,17 @@ def I(r, limbdark):
   
   '''
   
-  if limbdark.ldmodel == _QUADRATIC:
+  if limbdark.ldmodel == QUADRATIC:
     u1 = limbdark.u1
     u2 = limbdark.u2
     return (1-u1*(1-np.sqrt(1-r**2))-u2*(1-np.sqrt(1-r**2))**2)/(1-u1/3-u2/6)/np.pi
-  elif limbdark.ldmodel == _KIPPING:
+  elif limbdark.ldmodel == KIPPING:
     a = np.sqrt(limbdark.q1)
     b = 2*limbdark.q2
     u1 = a*b
     u2 = a*(1 - b)
     return (1-u1*(1-np.sqrt(1-r**2))-u2*(1-np.sqrt(1-r**2))**2)/(1-u1/3-u2/6)/np.pi
-  elif limbdark.ldmodel == _NONLINEAR:
+  elif limbdark.ldmodel == NONLINEAR:
     raise Exception('Nonlinear model not yet implemented!')                           # TODO!
   else:
     raise Exception('Invalid limb darkening model.')
