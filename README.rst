@@ -28,7 +28,8 @@ Clone the repository and run
 
 >>> make
 
-to build the transit module. Then call or import ``pysyzygy`` to begin plotting transits!
+to build the transit module. Add the top-level folder to your ``$PATH``, then call or 
+import ``pysyzygy`` to begin plotting transits!
 
 Calling pysyzygy...
 ===================

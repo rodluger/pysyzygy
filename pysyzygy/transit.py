@@ -15,11 +15,12 @@ Mandel & Agol (2002) transit model.
    
 '''
 
+from __future__ import division, print_function, absolute_import, unicode_literals
 import ctypes
 import numpy as np
 from numpy.ctypeslib import ndpointer, as_ctypes
 import platform
-from pysyzygy import PSZGPATH
+from . import PSZGPATH
 
 # Define errors
 _ERR_NONE             =   0                                                           # We're good!

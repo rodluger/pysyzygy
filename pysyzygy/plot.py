@@ -6,15 +6,16 @@ plot.py
 
 '''
 
+from __future__ import division, print_function, absolute_import, unicode_literals
 import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib.cm as cm
 from matplotlib.colors import LinearSegmentedColormap, colorConverter
 import subprocess
 from PIL import Image
-import planet
-from transit import Transit, QUADRATIC, KIPPING, NONLINEAR, MAXPTS
-from pysyzygy import PSZGPATH
+from . import planet
+from .transit import Transit, QUADRATIC, KIPPING, NONLINEAR, MAXPTS
+from . import PSZGPATH
 import sys
 
 __all__ = ['PlotTransit', 'PlotImage', 'AnimateImage']
@@ -460,7 +461,7 @@ def AnimateImage(obl=0., bkgcolor = 'white', bkgimage = None,
     fig.savefig('tmp/%03d.png' % f, bbox_inches = 'tight')
     pl.close()
     i += 1
-  print ""
+  print("")
   
   # Make gif
   if resize is not None:

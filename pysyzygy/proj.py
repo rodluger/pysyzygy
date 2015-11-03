@@ -6,6 +6,7 @@ proj.py
 
 '''
 
+from __future__ import division, print_function, absolute_import, unicode_literals
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as pl

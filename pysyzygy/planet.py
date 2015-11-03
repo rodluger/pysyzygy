@@ -4,12 +4,13 @@ Adapted from ``spheres.py`` by Brett Morris (bmorris3)
 
 """
 
+from __future__ import division, print_function, absolute_import, unicode_literals
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 from PIL import Image, ImageOps
-import proj
-from pysyzygy import PSZGPATH
+from . import proj
+from . import PSZGPATH
 
 class Planet(object):
     def __init__(self, albedo=1, resolution=1000, RpRs = 0.1, image_map='earth', night_alpha = 0.35):
