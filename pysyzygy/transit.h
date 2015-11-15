@@ -95,7 +95,7 @@ static double dminarg1, dminarg2;
 #define KEPSHRTEXP              (58.89/86400.)
 #define KEPSHRTCAD              (60./86400.)
 #define MAXTRANSITS             500
-#define MAXPTS                  100000
+#define MAXPTS                  10000
 
 // Structs
 typedef struct {

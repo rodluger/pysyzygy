@@ -8,7 +8,11 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
-from PIL import Image, ImageOps
+try:
+  from PIL import Image, ImageOps
+except:
+  Image = None
+  ImageOps = None
 from . import proj
 from . import PSZGPATH
 

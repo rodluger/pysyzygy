@@ -12,7 +12,10 @@ import matplotlib.pyplot as pl
 import matplotlib.cm as cm
 from matplotlib.colors import LinearSegmentedColormap, colorConverter
 import subprocess
-from PIL import Image
+try:
+  from PIL import Image
+except:
+  Image = None
 from . import planet
 from .transit import Transit, QUADRATIC, KIPPING, NONLINEAR, MAXPTS
 from . import PSZGPATH

@@ -7,7 +7,10 @@ proj.py
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
-from PIL import Image
+try:
+  from PIL import Image
+except:
+  Image = None
 import numpy as np
 import matplotlib.pyplot as pl
 
@@ -18,7 +21,9 @@ class SphericalProjection(object):
     """
     
 
-    def __init__(self, image, filtering = Image.BICUBIC, res = 10):
+    def __init__(self, image, filtering = None, res = 10):
+        if filtering is None:
+          filtering = Image.BICUBIC
         self.filtering = filtering
         self.image = image
         self.res = res
