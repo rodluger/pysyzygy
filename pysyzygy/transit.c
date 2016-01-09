@@ -183,10 +183,17 @@ double rf(double x, double y, double z, int *err) {
 }   
 
 double sgn(double x) {
+  /* 
+      Returns the sign of x
+  */ 
   return (x > 0) - (x < 0);
 }
  
 double TrueAnomaly(double E, double ecc) {
+  /* 
+      The true anomaly as a function of the eccentric anomaly E
+      and the eccentricity ecc
+  */ 
   if (ecc == 0.) return E;
   else return 2. * atan2(pow(1. + ecc, 0.5) * sin(E / 2.), 
                          pow(1. - ecc, 0.5) * cos(E / 2.));
@@ -241,8 +248,8 @@ double EccentricAnomalyFast(double dMeanA, double dEcc, double tol, int maxiter)
 
 double EccentricAnomaly(double M, double e, double tol, int maxiter) {
   /*  
-  A simpler version of the Kepler solver, borrowed from
-  https://github.com/lkreidberg/batman/blob/master/c_src/_rsky.c
+      A simpler version of the Kepler solver, borrowed from
+      https://github.com/lkreidberg/batman/blob/master/c_src/_rsky.c
   */
   
   double E = M, eps = tol;                                                            // Kreidberg: eps = 1.0e-7;
@@ -254,7 +261,7 @@ double EccentricAnomaly(double M, double e, double tol, int maxiter) {
 
 int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr){
   /*
-  
+      Compute the transit model
   */    
   double au, bu, u1, u2, c1, c2, c3, c4;
   double omega, per, RpRs, aRs, inc, w, ecc, fi, tperi0, t;
@@ -717,5 +724,8 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
 }
 
 void dbl_free(double *ptr){
+  /* 
+      Called by python to free a double pointer
+  */ 
   free(ptr);
 }

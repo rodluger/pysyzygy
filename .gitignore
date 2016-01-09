@@ -1,9 +1,4 @@
-transit.png
-transit.gif
-.DS_Store
-pysyzygy/.DS_Store
-pysyzygy/transit.so
+*.so
+*.DS_Store
 *.pyc
 *.png
-pysyzygy/*.png
-pysyzygy/*.gif

@@ -8,6 +8,8 @@ A ``ctypes`` wrapper around a generalized C implementation of the
 Mandel & Agol (2002) transit model.
 
 .. todo::
+   - Nonlinear limb darkening
+   - Secondary eclipses
    - Make npts a user option; make arrays dynamically allocated
    - Fix zero eccentricity issues!
    - Verify that passing the array of transit times ``tN`` still works!
@@ -19,7 +21,6 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import ctypes
 import numpy as np
 from numpy.ctypeslib import ndpointer, as_ctypes
-import platform
 from . import PSZGPATH
 
 # Define errors
@@ -124,7 +125,7 @@ class TRANSIT(ctypes.Structure):
         self.MpMs = kwargs.pop('MpMs', self.MpMs)
         self.esw = kwargs.pop('esw', self.esw)
         self.ecw = kwargs.pop('ecw', self.ecw)
-        if self.esw == 0. and self.ecw == 0.:                                         # DEBUG: Fix this
+        if self.esw == 0. and self.ecw == 0.:                                         # A little hack to prevent numerical issues
           self.esw = 1.e-10
           self.ecw = 1.e-10
         self.per = kwargs.pop('per', self.per)
@@ -135,24 +136,24 @@ class TRANSIT(ctypes.Structure):
           self.ecc = 1.e-10
         self.w = kwargs.pop('w', self.w)
         self.aRs = kwargs.pop('aRs', self.aRs)
-        tN = kwargs.pop('tN', None)
+        tN = kwargs.pop('times', None)
         if tN is not None:
           self._tN_p = tN                                                             # The transit times. NOTE: Must be sorted!
           self._tN = TRANSITSARR(*self._tN_p)
           self.ntrans = len(self._tN_p)                                               # Number of transits; only used if tN is set (i.e., for TTVs)
       
       @property
-      def tN(self):
+      def times(self):
         return self._tN_p                                                             # The python-friendly list/array of transit times
 
       @tN.setter
-      def tN(self, value):
+      def times(self, value):
         self._tN_p = value
         self.ntrans = len(self._tN_p)
         self._tN = TRANSITSARR(*self._tN_p)                                           # The pointer version that gets passed to C
       
       @property
-      def tdur(self):
+      def duration(self):
         '''
         The approximate transit duration for the general case of an eccentric orbit
         
@@ -326,19 +327,11 @@ class SETTINGS(ctypes.Structure):
         self.computed = 0
         self.binned = 0
 
-# Check the OS
-if platform.system() == "Darwin":
-  try:
-    lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_mac.so')
-  except:
-    raise Exception("Can't find .so file; please type ``make`` to compile the code.")
-elif platform.system() == "Linux":
-  try:
-    lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit_linux.so')
-  except:
-    raise Exception("Can't find .so file; please type ``make`` to compile the code.")
-else:
-  raise Exception("Unknown platform.")
+# Load the C library
+try:
+  lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit.so')
+except:
+  raise Exception("Can't find .so file; please type ``make`` to compile the code.")
 
 # Declare the C functions; user should access these through the Transit() class below
 _Compute = lib.Compute
@@ -406,25 +399,6 @@ def RaiseError(err):
   else:
     raise Exception("Error in transit computation (%d)." % err)
 
-def AddTTVs(tN, ttv_amp = 0.1, ttv_noise = 0.02, ttv_phi = 0., ttv_per = 4.321):
-  '''
-  
-  '''
-  ttv_amp = np.atleast_1d(ttv_amp)
-  ttv_per = np.atleast_1d(ttv_per)
-  if len(ttv_amp) > 1 and ttv_phi == 0.:
-    ttv_phi = np.zeros_like(ttv_amp)
-  ttv_phi = np.atleast_1d(ttv_phi)
-  
-  ntrans = len(tN)
-  ttv = ttv_noise * np.random.randn(ntrans - 1)                                       # Add white noise      
-
-  for amp, per, phi in zip(ttv_amp, ttv_per, ttv_phi):
-    ttv += amp * np.sin(phi + 2 * np.pi / per * np.array(range(ntrans - 1)))          # Perfectly periodic
-  
-  ttv = np.concatenate(([0], ttv))                                                    # First transit is not shifted
-  return tN + ttv
-
 class Transit():
   '''
   A user-friendly wrapper around the ``ctypes`` routines.
@@ -446,7 +420,7 @@ class Transit():
     
     if kwargs.get('verify_kwargs', True):
       valid = [y[0] for x in [TRANSIT, LIMBDARK, SETTINGS] for y in x._fields_]       # List of valid kwargs
-      valid += ['b', 'tN']                                                            # These are special!
+      valid += ['b', 'times']                                                         # These are special!
       for k in kwargs.keys():
         if k not in valid:
           raise Exception("Invalid kwarg '%s'." % k)  
@@ -462,7 +436,7 @@ class Transit():
     self.settings.update(**kwargs)
     
   
-  def __call__(self, t, param):
+  def __call__(self, t, param = 'binned'):
     if param == 'flux':
       array = _ARR_FLUX
     elif param == 'binned':
