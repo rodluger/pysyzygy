@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-import os
-PSZGPATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))                # This is the path to the top-level pysyzygy folder
-from .plot import *
+from __future__ import division, print_function, absolute_import, unicode_literals
 from .transit import *
 
 __version__ = "0.0.1"

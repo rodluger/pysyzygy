@@ -34,31 +34,7 @@ import ``pysyzygy`` to begin plotting transits!
 Calling pysyzygy...
 ===================
 
-... is super easy. If you want to plot stuff, try the following examples:
-
-.. code-block:: python
-  
-  import pysyzygy as ps
-  ps.PlotTransit(per = 2.0, RpRs = 0.1, ecc = 0, rhos = 1.0, 
-                 b = 0.75, q1 = 1., q2 = 0., w = 0.)
- 
-.. code-block:: python  
-  
-  import matplotlib.pyplot as pl
-  fig, ax = ps.PlotImage(M = 0., per = 1.0, RpRs = 0.5, ecc = 0, w = 0, rhos = 1.0,
-                         b = 1.5, q1 = 1., q2 = 0., bkgimage = 'stars')
-  pl.show() 
-  
-.. code-block:: python 
- 
-  ps.AnimateImage(per = 0.5, RpRs = 0.45, ecc = 0, rhos = 1.0, w = 0,
-                  b = 0.3, u1 = 1., u2 = 0., delay = 0,
-                  bkgimage = 'stars', nsteps = 100,
-                  image_map = 'earth', size_inches = (12, 9),
-                  lightcurve = True)
-
-Or, if you're interested in the lightcurve model itself, the ``Transit`` class is
-what you want:
+... is super easy.
 
 .. code-block:: python
   
@@ -81,7 +57,7 @@ what you want:
   
   # Now interpolate to get the lightcurve on a grid of observation times
   t = np.arange(0., 10., ps.transit.KEPLONGCAD)
-  flux = trn.Interpolate(t, 'binned')
+  flux = trn.Interpolate(t)
         
 Stay tuned; detailed documentation is coming soon!
 

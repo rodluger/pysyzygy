@@ -20,8 +20,8 @@ Mandel & Agol (2002) transit model.
 from __future__ import division, print_function, absolute_import, unicode_literals
 import ctypes
 import numpy as np
+import os
 from numpy.ctypeslib import ndpointer, as_ctypes
-from . import PSZGPATH
 
 # Define errors
 _ERR_NONE             =   0                                                           # We're good!
@@ -117,27 +117,37 @@ class TRANSIT(ctypes.Structure):
         
         '''
         
-        self.bcirc = kwargs.pop('bcirc', self.bcirc)
-        b = kwargs.pop('b', None)
+        self.MpMs = kwargs.pop('MpMs', 0.)
+        self.per = kwargs.pop('per', 10.)
+        self.RpRs = kwargs.pop('RpRs', 0.1)
+        
+        self.bcirc = kwargs.pop('bcirc', 0.)
+        b = kwargs.pop('b', None)                                                     # User may specify either ``b`` or ``bcirc``
         if b is not None: 
           self.bcirc = b
-        self.rhos = kwargs.pop('rhos', self.rhos)
-        self.MpMs = kwargs.pop('MpMs', self.MpMs)
-        self.esw = kwargs.pop('esw', self.esw)
-        self.ecw = kwargs.pop('ecw', self.ecw)
-        if self.esw == 0. and self.ecw == 0.:                                         # A little hack to prevent numerical issues
-          self.esw = 1.e-10
-          self.ecw = 1.e-10
-        self.per = kwargs.pop('per', self.per)
-        self.RpRs = kwargs.pop('RpRs', self.RpRs)
-        self.t0 = kwargs.pop('t0', self.t0)          
-        self.ecc = kwargs.pop('ecc', self.ecc)
+        
+        self.rhos = kwargs.pop('rhos', 1.4)                                           # User may specify either ``rhos`` or ``aRs``
+        self.aRs = kwargs.pop('aRs', np.nan)
+        if not np.isnan(self.aRs):
+          self.rhos = np.nan
+                
+        self.ecc = kwargs.pop('ecc', 0.)                                              # User may specify (``esw`` and ``ecw``) or (``ecc`` and ``w``)
         if self.ecc == 0.:
-          self.ecc = 1.e-10
-        self.w = kwargs.pop('w', self.w)
-        self.aRs = kwargs.pop('aRs', self.aRs)
+          self.ecc = 1.e-10                                                           # A little hack to prevent numerical issues
+        self.w = kwargs.pop('w', 0.)
+        self.esw = kwargs.pop('esw', np.nan)
+        self.ecw = kwargs.pop('ecw', np.nan)
+        if self.esw == 0. and self.ecw == 0.:                                         
+          self.esw = 1.e-10                                                           # A little hack to prevent numerical issues
+          self.ecw = 1.e-10
+        elif (not np.isnan(self.esw)) and (not np.isnan(self.ecw)):
+          self.ecc = np.nan
+          self.w = np.nan
+
+        self.t0 = kwargs.pop('t0', 0.)                                                # User may specify either ``t0`` or ``times``
         tN = kwargs.pop('times', None)
         if tN is not None:
+          self.t0 = np.nan
           self._tN_p = tN                                                             # The transit times. NOTE: Must be sorted!
           self._tN = TRANSITSARR(*self._tN_p)
           self.ntrans = len(self._tN_p)                                               # Number of transits; only used if tN is set (i.e., for TTVs)
@@ -146,7 +156,7 @@ class TRANSIT(ctypes.Structure):
       def times(self):
         return self._tN_p                                                             # The python-friendly list/array of transit times
 
-      @tN.setter
+      @times.setter
       def times(self, value):
         self._tN_p = value
         self.ntrans = len(self._tN_p)
@@ -159,13 +169,14 @@ class TRANSIT(ctypes.Structure):
         
         '''
         ecc = self.ecc if not np.isnan(self.ecc) else np.sqrt(self.ecw**2 + self.esw**2)
+        esw = self.esw if not np.isnan(self.esw) else ecc * np.sin(self.w)
         aRs = ((G * self.rhos * (1. + self.MpMs) * 
               (self.per * DAYSEC)**2.) / (3. * np.pi))**(1./3.)
         inc = np.arccos(self.bcirc/aRs)
-        becc = self.bcirc * (1 - ecc**2)/(1 - self.esw)
+        becc = self.bcirc * (1 - ecc**2)/(1 - esw)
         tdur = self.per / 2. / np.pi * np.arcsin(((1. + self.RpRs)**2 -
                becc**2)**0.5 / (np.sin(inc) * aRs))
-        tdur *= np.sqrt(1. - ecc**2.)/(1. - self.esw)
+        tdur *= np.sqrt(1. - ecc**2.)/(1. - esw)
         return tdur
            
 class LIMBDARK(ctypes.Structure):
@@ -180,8 +191,8 @@ class LIMBDARK(ctypes.Structure):
                   ("c4", ctypes.c_double)]
                   
       def __init__(self, **kwargs):
-        self.ldmodel = QUADRATIC
-        self.u1 = np.nan
+        self.ldmodel = np.nan
+        self.u1 = np.nan                                                               
         self.u2 = np.nan
         self.q1 = np.nan
         self.q2 = np.nan
@@ -196,15 +207,20 @@ class LIMBDARK(ctypes.Structure):
         
         '''
         
-        self.ldmodel = kwargs.pop('ldmodel', self.ldmodel)
-        self.u1 = kwargs.pop('u1', self.u1)
-        self.u2 = kwargs.pop('u2', self.u1)
+        self.ldmodel = kwargs.pop('ldmodel', QUADRATIC)
+        self.u1 = kwargs.pop('u1', 0.40)                                              # ~ The sun seen by Kepler (http://arxiv.org/pdf/0912.2274.pdf)
+        self.u2 = kwargs.pop('u2', 0.26)
         self.q1 = kwargs.pop('q1', self.q1)
         self.q2 = kwargs.pop('q2', self.q2)
         self.c1 = kwargs.pop('c1', self.c1)
         self.c2 = kwargs.pop('c2', self.c2)
         self.c3 = kwargs.pop('c3', self.c3)
         self.c4 = kwargs.pop('c4', self.c4)
+        
+        # If other coeffs are set, clear the defaults
+        if (not np.isnan(self.q1)) or (not np.isnan(self.c1)):
+          self.u1 = np.nan
+          self.u2 = np.nan 
                   
 class ARRAYS(ctypes.Structure):
       _fields_ = [("nstart", ctypes.c_int),
@@ -329,7 +345,7 @@ class SETTINGS(ctypes.Structure):
 
 # Load the C library
 try:
-  lib = ctypes.CDLL(PSZGPATH + '/pysyzygy/transit.so')
+  lib = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'transitlib.so'))
 except:
   raise Exception("Can't find .so file; please type ``make`` to compile the code.")
 
@@ -434,7 +450,6 @@ class Transit():
     self.limbdark.update(**kwargs)
     self.transit.update(**kwargs)
     self.settings.update(**kwargs)
-    
   
   def __call__(self, t, param = 'binned'):
     if param == 'flux':
@@ -459,6 +474,12 @@ class Transit():
       array = _ARR_B
     else:
       RaiseError(_ERR_NOT_IMPLEMENTED)
+    
+    # Ensure the time is a float array
+    if not (type(t) is np.ndarray):
+      t = np.array(t, dtype = 'float64')
+    elif t.dtype != 'float64':
+      t = np.array(t, dtype = 'float64')
     
     err = _Interpolate(t, len(t), array, self.transit, self.limbdark, self.settings, 
                        self.arrays)
