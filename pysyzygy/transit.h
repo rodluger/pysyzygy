@@ -95,7 +95,6 @@ static double dminarg1, dminarg2;
 #define KEPSHRTEXP              (58.89/86400.)
 #define KEPSHRTCAD              (60./86400.)
 #define MAXTRANSITS             500
-#define MAXPTS                  1000
 
 // Structs
 typedef struct {
@@ -130,17 +129,20 @@ typedef struct {
   int nstart;
   int nend;
   int ipts;
-  double time[MAXPTS];
-  double flux[MAXPTS];
-  double bflx[MAXPTS];
-  double M[MAXPTS];
-  double E[MAXPTS];
-  double f[MAXPTS];
-  double r[MAXPTS];
-  double x[MAXPTS];
-  double y[MAXPTS];
-  double z[MAXPTS];
-  double b[MAXPTS];
+  int calloc;
+  int balloc;
+  int ialloc;
+  double *time;
+  double *flux;
+  double *bflx;
+  double *M;
+  double *E;
+  double *f;
+  double *r;
+  double *x;
+  double *y;
+  double *z;
+  double *b;
   double *iarr;  
 } ARRAYS;
 
@@ -148,6 +150,7 @@ typedef struct {
   double exp_time;
   double keptol;
   int fullorbit;
+  int maxpts;
   int exppts;
   int binmethod;
   int intmethod;

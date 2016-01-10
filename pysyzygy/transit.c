@@ -271,6 +271,18 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   int np = 0, nm = 0, npctr = 0, nmctr = 0;
   int iErr = ERR_NONE;
 
+  arr->time = malloc(settings->maxpts*sizeof(double)); 
+  arr->flux = malloc(settings->maxpts*sizeof(double)); 
+  arr->M = malloc(settings->maxpts*sizeof(double)); 
+  arr->E = malloc(settings->maxpts*sizeof(double)); 
+  arr->f = malloc(settings->maxpts*sizeof(double)); 
+  arr->r = malloc(settings->maxpts*sizeof(double)); 
+  arr->x = malloc(settings->maxpts*sizeof(double)); 
+  arr->y = malloc(settings->maxpts*sizeof(double)); 
+  arr->z = malloc(settings->maxpts*sizeof(double)); 
+  arr->b = malloc(settings->maxpts*sizeof(double)); 
+  arr->calloc = 1;
+
   if (settings->exppts % 2) return ERR_EXP_PTS;                                       // Verify user input: Must be even!
 
   if (limbdark->ldmodel == QUADRATIC) {                                               // Verify user input: Limb darkening model
@@ -349,7 +361,7 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
   
   for (s = -1; s <= 1; s+=2) {                                                        // Sign: -1 or +1
     t = 0.;
-    for (i = MAXPTS/2; ((i < MAXPTS) && (i >= 0)) ; i+=s) {                           // Loop over all points. Start from transit center and go left, then right
+    for (i = settings->maxpts/2; ((i < settings->maxpts) && (i >= 0)) ; i+=s) {                           // Loop over all points. Start from transit center and go left, then right
          
       /*
       --- ORBITAL SOLUTION ---
@@ -518,9 +530,9 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
     }
   }
   
-  if ((nm == 0) || (np == 0)) return ERR_MAX_PTS;                                     // We didn't reach the edge of the transit within MAXPTS
-  if ((nm >= MAXPTS/2 - settings->exppts/2 - 1) && 
-      (np <= MAXPTS/2 + settings->exppts/2 +  1)) 
+  if ((nm == 0) || (np == 0)) return ERR_MAX_PTS;                                     // We didn't reach the edge of the transit within settings->maxpts
+  if ((nm >= settings->maxpts/2 - settings->exppts/2 - 1) && 
+      (np <= settings->maxpts/2 + settings->exppts/2 +  1)) 
     return ERR_NO_TRANSIT;                                                            // There's no transit!
   arr->nstart = nm;                                                                   // first index
   arr->nend = np + 1;                                                                 // one plus last index
@@ -533,6 +545,9 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
   int i, j, ep, nb, hx; 
   double sum;
 
+  arr->bflx = malloc(settings->maxpts*sizeof(double)); 
+  arr->balloc = 1;
+  
   if (!settings->computed) return ERR_NOT_COMPUTED;                                   // Must compute first!
   ep = settings->exppts;                                                              // Shortcut for exppts
   hx = ep/2;                                                                          // The number of extra points on each side of the transit
@@ -618,6 +633,7 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
     if (isnan(transit->t0)) return ERR_T0;                                            // User didn't specify t0!
   
   arr->iarr = malloc(ipts*sizeof(double));                                            // The interpolated array 
+  arr->ialloc = 1;
   
   if (!settings->computed) {
     iErr = Compute(transit, limbdark, settings, arr);                                 // Compute the raw transit model if necessary

@@ -10,8 +10,6 @@ Mandel & Agol (2002) transit model.
 .. todo::
    - Nonlinear limb darkening
    - Secondary eclipses
-   - Make npts a user option; make arrays dynamically allocated
-   - Verify that passing the array of transit times ``tN`` still works!
    
 '''
 
@@ -73,7 +71,6 @@ _ARR_B       =             9
 
 # Other
 MAXTRANSITS =             500
-MAXPTS      =             1000
 TRANSITSARR =             ctypes.c_double * MAXTRANSITS
 G           =             6.672e-8
 DAYSEC      =             86400.
@@ -94,17 +91,6 @@ class TRANSIT(ctypes.Structure):
                   ("_tN", TRANSITSARR)]
       
       def __init__(self, **kwargs):
-        self.bcirc = np.nan
-        self.rhos = np.nan
-        self.MpMs = np.nan
-        self.esw = np.nan
-        self.ecw = np.nan
-        self.per = np.nan
-        self.RpRs = np.nan
-        self.t0 = np.nan
-        self.ecc = np.nan
-        self.w = np.nan
-        self.aRs = np.nan
         self._tN_p = []
         self._tN = TRANSITSARR(*self._tN_p)
         self.ntrans = len(self._tN_p)     
@@ -189,15 +175,6 @@ class LIMBDARK(ctypes.Structure):
                   ("c4", ctypes.c_double)]
                   
       def __init__(self, **kwargs):
-        self.ldmodel = np.nan
-        self.u1 = np.nan                                                               
-        self.u2 = np.nan
-        self.q1 = np.nan
-        self.q2 = np.nan
-        self.c1 = np.nan
-        self.c2 = np.nan
-        self.c3 = np.nan
-        self.c4 = np.nan
         self.update(**kwargs)
         
       def update(self, **kwargs):
@@ -208,12 +185,12 @@ class LIMBDARK(ctypes.Structure):
         self.ldmodel = kwargs.pop('ldmodel', QUADRATIC)
         self.u1 = kwargs.pop('u1', 0.40)                                              # ~ The sun seen by Kepler (http://arxiv.org/pdf/0912.2274.pdf)
         self.u2 = kwargs.pop('u2', 0.26)
-        self.q1 = kwargs.pop('q1', self.q1)
-        self.q2 = kwargs.pop('q2', self.q2)
-        self.c1 = kwargs.pop('c1', self.c1)
-        self.c2 = kwargs.pop('c2', self.c2)
-        self.c3 = kwargs.pop('c3', self.c3)
-        self.c4 = kwargs.pop('c4', self.c4)
+        self.q1 = kwargs.pop('q1', np.nan)
+        self.q2 = kwargs.pop('q2', np.nan)
+        self.c1 = kwargs.pop('c1', np.nan)
+        self.c2 = kwargs.pop('c2', np.nan)
+        self.c3 = kwargs.pop('c3', np.nan)
+        self.c4 = kwargs.pop('c4', np.nan)
         
         # If other coeffs are set, clear the defaults
         if (not np.isnan(self.q1)) or (not np.isnan(self.c1)):
@@ -224,35 +201,29 @@ class ARRAYS(ctypes.Structure):
       _fields_ = [("nstart", ctypes.c_int),
                   ("nend", ctypes.c_int),
                   ("ipts", ctypes.c_int),
-                  ("_time", ctypes.c_double * MAXPTS),
-                  ("_flux", ctypes.c_double * MAXPTS),
-                  ("_bflx", ctypes.c_double * MAXPTS),
-                  ("_M", ctypes.c_double * MAXPTS),
-                  ("_E", ctypes.c_double * MAXPTS),
-                  ("_f", ctypes.c_double * MAXPTS),
-                  ("_r", ctypes.c_double * MAXPTS),
-                  ("_x", ctypes.c_double * MAXPTS),
-                  ("_y", ctypes.c_double * MAXPTS),
-                  ("_z", ctypes.c_double * MAXPTS),
-                  ("_b", ctypes.c_double * MAXPTS),
+                  ("_calloc", ctypes.c_int),
+                  ("_balloc", ctypes.c_int),
+                  ("_ialloc", ctypes.c_int),
+                  ("_time", ctypes.POINTER(ctypes.c_double)),
+                  ("_flux", ctypes.POINTER(ctypes.c_double)),
+                  ("_bflx", ctypes.POINTER(ctypes.c_double)),
+                  ("_M", ctypes.POINTER(ctypes.c_double)),
+                  ("_E", ctypes.POINTER(ctypes.c_double)),
+                  ("_f", ctypes.POINTER(ctypes.c_double)),
+                  ("_r", ctypes.POINTER(ctypes.c_double)),
+                  ("_x", ctypes.POINTER(ctypes.c_double)),
+                  ("_y", ctypes.POINTER(ctypes.c_double)),
+                  ("_z", ctypes.POINTER(ctypes.c_double)),
+                  ("_b", ctypes.POINTER(ctypes.c_double)),
                   ("_iarr", ctypes.POINTER(ctypes.c_double))]
                   
-      def __init__(self, **kwargs):        
-        self._time = as_ctypes(np.zeros(MAXPTS))
-        self._flux = as_ctypes(np.zeros(MAXPTS))
-        self._bflx = as_ctypes(np.zeros(MAXPTS))
-        self._M = as_ctypes(np.zeros(MAXPTS))
-        self._E = as_ctypes(np.zeros(MAXPTS))
-        self._f = as_ctypes(np.zeros(MAXPTS))
-        self._r = as_ctypes(np.zeros(MAXPTS))
-        self._x = as_ctypes(np.zeros(MAXPTS))
-        self._y = as_ctypes(np.zeros(MAXPTS))
-        self._z = as_ctypes(np.zeros(MAXPTS))
-        self._b = as_ctypes(np.zeros(MAXPTS))     
-        
+      def __init__(self, **kwargs):                
         self.nstart = 0
-        self.nend = MAXPTS
+        self.nend = 0
         self.ipts = 0
+        self._calloc = 0
+        self._balloc = 0
+        self._ialloc = 0
       
       @property
       def time(self):
@@ -306,6 +277,7 @@ class SETTINGS(ctypes.Structure):
       _fields_ = [("exp_time", ctypes.c_double),
                   ("keptol", ctypes.c_double),
                   ("fullorbit", ctypes.c_int),
+                  ("maxpts", ctypes.c_int),
                   ("exppts", ctypes.c_int),
                   ("binmethod", ctypes.c_int),
                   ("intmethod", ctypes.c_int),
@@ -317,6 +289,7 @@ class SETTINGS(ctypes.Structure):
       def __init__(self, **kwargs):
         self.exp_time = KEPLONGEXP
         self.fullorbit = 0
+        self.maxpts = 10000
         self.exppts = 50
         self.binmethod = RIEMANN
         self.intmethod = SMARTINT
@@ -332,6 +305,7 @@ class SETTINGS(ctypes.Structure):
         
         self.exp_time = kwargs.pop('exp_time', self.exp_time)                         # Long cadence integration time
         self.fullorbit = 1 if kwargs.pop('fullorbit', self.fullorbit) else 0          # Compute full orbit or just the transits (default)
+        self.maxpts = kwargs.pop('maxpts', self.maxpts)                               # Maximum number of points in arrays (for mem. allocation)
         self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over this many points for binning
         self.binmethod = kwargs.pop('binmethod', self.binmethod)                      # How to integrate when binning?
         self.intmethod = kwargs.pop('intmethod', self.intmethod)                      # Integration method
@@ -378,8 +352,8 @@ def RaiseError(err):
     raise Exception("Option not implemented.")
   elif (err == _ERR_MAX_PTS):
     raise Exception("Maximum points in lightcurve exceeded. " + 
-                    "Try decreasing `exppts`, increasing `exp_time`, or recompiling "+
-                    "the code with a larger value for `MAXPTS`.")  
+                    "Try decreasing `exppts`, increasing `exp_time`, or increasing "+
+                    "`maxpts`.")  
   elif (err == _ERR_NO_TRANSIT):
     raise Exception("Object does not transit the star.")  
   elif (err == _ERR_BAD_ECC):
@@ -483,7 +457,8 @@ class Transit():
                        self.arrays)
     if err != _ERR_NONE: RaiseError(err)
     res = self.arrays.iarr
-    self.Clean()
+    _dbl_free(self.arrays._iarr)
+    self.arrays._ialloc = 0
     return res
   
   def Compute(self):
@@ -494,10 +469,35 @@ class Transit():
     err = _Bin(self.transit, self.limbdark, self.settings, self.arrays)
     if err != _ERR_NONE: RaiseError(err)
   
-  def Clean(self):
+  def Free(self):
     '''
-    Frees the memory used by the interpolated array.
+    Frees the memory used by all of the dynamically allocated C arrays.
     
     '''
     
-    _dbl_free(self.arrays._iarr)
+    if self.arrays._calloc:
+      _dbl_free(self.arrays._time)
+      _dbl_free(self.arrays._flux)
+      _dbl_free(self.arrays._bflx)
+      _dbl_free(self.arrays._M)
+      _dbl_free(self.arrays._E)
+      _dbl_free(self.arrays._f)
+      _dbl_free(self.arrays._r)
+      _dbl_free(self.arrays._x)
+      _dbl_free(self.arrays._y)
+      _dbl_free(self.arrays._z)
+      self.arrays._calloc = 0
+    if self.arrays._balloc:  
+      _dbl_free(self.arrays._b)
+      self.arrays._balloc = 0
+    if self.arrays._ialloc:
+      _dbl_free(self.arrays._iarr)
+      self.arrays._ialloc = 0
+  
+  def __del__(self):
+    '''
+    Free the C arrays when the last reference to the class goes out of scope!
+    
+    '''
+    
+    self.Free()
