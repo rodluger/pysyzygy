@@ -2,7 +2,7 @@ py·sy·zy·gy
 -----------
 /ˈpīsizijē/ |speaker|
 
-.. |speaker| image:: /../img/speaker.png?raw=True
+.. |speaker| image:: img/speaker.png?raw=True
              :target: http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3
 
 *noun*
@@ -11,14 +11,14 @@ py·sy·zy·gy
 
 **2.** ``pysyzygy`` computes **fast** lightcurves for the most general case of a *massive*, *eccentric* planet orbiting a limb-darkened star. Here's a sample output image of an assymetric transit:
 
-.. image:: /../img/transit.png?raw=True
+.. image:: img/transit.png?raw=True
    :alt: pysyzygy
    :scale: 50 %
    :align: center
 
 **3.** ``pysyzygy`` can also generate sweet animations, such as this one (*WARNING: not to scale!*):
 
-.. image:: /../img/transit.gif?raw=True
+.. image:: img/transit.gif?raw=True
    :alt: pysyzygy
    :align: center
 
