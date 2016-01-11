@@ -147,7 +147,7 @@ typedef struct {
 } ARRAYS;
 
 typedef struct {
-  double exp_time;
+  double exptime;
   double keptol;
   int fullorbit;
   int maxpts;

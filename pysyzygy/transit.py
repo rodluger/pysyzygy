@@ -8,8 +8,8 @@ A ``ctypes`` wrapper around a generalized C implementation of the
 Mandel & Agol (2002) transit model.
 
 .. todo::
-   - Nonlinear limb darkening
-   - Secondary eclipses
+   - Add nonlinear limb darkening
+   - Add secondary eclipses
    
 '''
 
@@ -114,20 +114,15 @@ class TRANSIT(ctypes.Structure):
         self.aRs = kwargs.pop('aRs', np.nan)
         if not np.isnan(self.aRs):
           self.rhos = np.nan
-                
+               
         self.ecc = kwargs.pop('ecc', 0.)                                              # User may specify (``esw`` and ``ecw``) or (``ecc`` and ``w``)
-        if self.ecc == 0.:
-          self.ecc = 1.e-10                                                           # A little hack to prevent numerical issues
         self.w = kwargs.pop('w', 0.)
         self.esw = kwargs.pop('esw', np.nan)
         self.ecw = kwargs.pop('ecw', np.nan)
-        if self.esw == 0. and self.ecw == 0.:                                         
-          self.esw = 1.e-10                                                           # A little hack to prevent numerical issues
-          self.ecw = 1.e-10
-        elif (not np.isnan(self.esw)) and (not np.isnan(self.ecw)):
+        if (not np.isnan(self.esw)) and (not np.isnan(self.ecw)):
           self.ecc = np.nan
           self.w = np.nan
-
+                
         self.t0 = kwargs.pop('t0', 0.)                                                # User may specify either ``t0`` or ``times``
         tN = kwargs.pop('times', None)
         if tN is not None:
@@ -274,7 +269,7 @@ class ARRAYS(ctypes.Structure):
         return np.array([self._iarr[i] for i in range(self.ipts)])
              
 class SETTINGS(ctypes.Structure):
-      _fields_ = [("exp_time", ctypes.c_double),
+      _fields_ = [("exptime", ctypes.c_double),
                   ("keptol", ctypes.c_double),
                   ("fullorbit", ctypes.c_int),
                   ("maxpts", ctypes.c_int),
@@ -287,7 +282,7 @@ class SETTINGS(ctypes.Structure):
                   ("kepsolver", ctypes.c_int)]
       
       def __init__(self, **kwargs):
-        self.exp_time = KEPLONGEXP
+        self.exptime = KEPLONGEXP
         self.fullorbit = 0
         self.maxpts = 10000
         self.exppts = 50
@@ -303,7 +298,7 @@ class SETTINGS(ctypes.Structure):
         
         '''
         
-        self.exp_time = kwargs.pop('exp_time', self.exp_time)                         # Long cadence integration time
+        self.exptime = kwargs.pop('exptime', self.exptime)                         # Long cadence integration time
         self.fullorbit = 1 if kwargs.pop('fullorbit', self.fullorbit) else 0          # Compute full orbit or just the transits (default)
         self.maxpts = kwargs.pop('maxpts', self.maxpts)                               # Maximum number of points in arrays (for mem. allocation)
         self.exppts = kwargs.pop('exppts', self.exppts)                               # Average flux over this many points for binning
@@ -352,7 +347,7 @@ def RaiseError(err):
     raise Exception("Option not implemented.")
   elif (err == _ERR_MAX_PTS):
     raise Exception("Maximum points in lightcurve exceeded. " + 
-                    "Try decreasing `exppts`, increasing `exp_time`, or increasing "+
+                    "Try decreasing `exppts`, increasing `exptime`, or increasing "+
                     "`maxpts`.")  
   elif (err == _ERR_NO_TRANSIT):
     raise Exception("Object does not transit the star.")  
@@ -424,10 +419,10 @@ class Transit():
     self.settings.update(**kwargs)
   
   def __call__(self, t, param = 'binned'):
-    if param == 'flux':
-      array = _ARR_FLUX
-    elif param == 'binned':
+    if param == 'binned':
       array = _ARR_BFLX
+    elif param == 'unbinned':
+      array = _ARR_FLUX
     elif param == 'M':
       array = _ARR_M
     elif param == 'E':

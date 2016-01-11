@@ -3,6 +3,13 @@
 #include <math.h>
 #include "transit.h"
  
+void dbl_free(double *ptr){
+  /* 
+      Called by python to free a double pointer
+  */ 
+  free(ptr);
+} 
+ 
 double modulus(double x, double y) {
   /*
       The arithmetic modulus, x mod y
@@ -253,7 +260,9 @@ double EccentricAnomaly(double M, double e, double tol, int maxiter) {
   */
   
   double E = M, eps = tol;                                                            // Kreidberg: eps = 1.0e-7;
-
+  
+  if (e == 0.) return M;                                                              // The trivial circular case
+  
 	while(fabs(E - e*sin(E) - M) > eps) E = E - (E - e*sin(E) - M)/(1.0 - e*cos(E));
 	return E;
 	
@@ -342,22 +351,18 @@ int Compute(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *ar
     transit->w = w;
   }
   
-  // IMPORTANT: My definition of omega in the equations below is apparently
+  // HACK: My definition of omega in the equations below is apparently
   // off by 180 degrees from Laura Kreidberg's in BATMAN. This isn't elegant,
   // but the two models agree now that I added the following line:
   w = w - PI;
   
-  if (ecc > 0.) {
-    fi = (3. * PI / 2.) - w;                                                          // True anomaly at transit center (Shields et al. 2015)
-    tperi0 = per * sqrt(1. - ecc * ecc) / (2. * PI) * (ecc * sin(fi) / 
-             (1. + ecc * cos(fi)) - 2. / sqrt(1. - ecc * ecc) * 
-             atan2(sqrt(1. - ecc * ecc) * tan(fi/2.), 1. + ecc));                     // Time of pericenter passage (Shields et al. 2015)
-  } else {
-    tperi0 = 0.;
-  }
+  fi = (3. * PI / 2.) - w;                                                            // True anomaly at transit center (Shields et al. 2015)
+  tperi0 = per * sqrt(1. - ecc * ecc) / (2. * PI) * (ecc * sin(fi) / 
+           (1. + ecc * cos(fi)) - 2. / sqrt(1. - ecc * ecc) * 
+           atan2(sqrt(1. - ecc * ecc) * tan(fi/2.), 1. + ecc));                       // Time of pericenter passage (Shields et al. 2015)
 
   omega = 1. - u1/3. - u2/6.;                                                         // See Mandel and Agol (2002)
-  dt = settings->exp_time / settings->exppts;                                         // The time step
+  dt = settings->exptime / settings->exppts;                                          // The time step
   
   for (s = -1; s <= 1; s+=2) {                                                        // Sign: -1 or +1
     t = 0.;
@@ -620,8 +625,7 @@ int Bin(TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
 
 }
 
-int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limbdark, 
-                SETTINGS *settings, ARRAYS *arr) {
+int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limbdark, SETTINGS *settings, ARRAYS *arr) {
   
   double f1, f0, t1, t0, ti;
   int i, j, nt;
@@ -704,7 +708,7 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
     // Now we find [j, j + 1], the indices bounding the data point
     
     if (settings->intmethod == SMARTINT) {                                            // Increment j intelligently. NOTE: time array must be sorted!
-      if (j > 0) j += settings->exppts * (t[i] - t[i - 1])/settings->exp_time;         
+      if (j > 0) j += settings->exppts * (t[i] - t[i - 1])/settings->exptime;         
       j = j % (arr->nend - arr->nstart);
       
       if (arr->time[arr->nstart + j + 1] <= ti) {                                     // We undershot; let's loop until we get the right index
@@ -737,11 +741,4 @@ int Interpolate(double *t, int ipts, int array, TRANSIT *transit, LIMBDARK *limb
   
   return iErr;
 
-}
-
-void dbl_free(double *ptr){
-  /* 
-      Called by python to free a double pointer
-  */ 
-  free(ptr);
 }
