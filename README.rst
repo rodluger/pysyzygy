@@ -13,7 +13,6 @@ py·sy·zy·gy
 
 .. image:: img/transit.png?raw=True
    :alt: pysyzygy
-   :scale: 50 %
    :align: center
 
 Installation
