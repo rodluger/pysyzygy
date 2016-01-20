@@ -469,7 +469,7 @@ class Transit():
     Frees the memory used by all of the dynamically allocated C arrays.
     
     '''
-    
+
     if self.arrays._calloc:
       _dbl_free(self.arrays._time)
       _dbl_free(self.arrays._flux)
@@ -494,5 +494,4 @@ class Transit():
     Free the C arrays when the last reference to the class goes out of scope!
     
     '''
-    
     self.Free()
