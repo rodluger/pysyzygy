@@ -4,12 +4,14 @@
 transit.py
 ----------
 
-A ``ctypes`` wrapper around a generalized C implementation of the 
-Mandel & Agol (2002) transit model.
+A :py:mod:`ctypes` wrapper around a generalized C implementation of the 
+`Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_
+transit model
 
 .. todo::
    - Add nonlinear limb darkening
    - Add secondary eclipses
+   - Longitude of pericenter
    
 '''
 
@@ -76,6 +78,11 @@ G           =             6.672e-8
 DAYSEC      =             86400.
 
 class TRANSIT(ctypes.Structure):
+      '''
+      The class containing all the transiting planet parameters
+      
+      '''
+      
       _fields_ = [("bcirc", ctypes.c_double),
                   ("rhos", ctypes.c_double),
                   ("MpMs", ctypes.c_double),
@@ -159,6 +166,11 @@ class TRANSIT(ctypes.Structure):
         return tdur
            
 class LIMBDARK(ctypes.Structure):
+      '''
+      The class containing the limb darkening parameters
+      
+      '''
+      
       _fields_ = [("ldmodel", ctypes.c_int),
                   ("u1", ctypes.c_double),
                   ("u2", ctypes.c_double),  
@@ -193,6 +205,11 @@ class LIMBDARK(ctypes.Structure):
           self.u2 = np.nan 
                   
 class ARRAYS(ctypes.Structure):
+      '''
+      The class that stores the input and output arrays
+      
+      '''
+      
       _fields_ = [("nstart", ctypes.c_int),
                   ("nend", ctypes.c_int),
                   ("ipts", ctypes.c_int),
@@ -269,6 +286,10 @@ class ARRAYS(ctypes.Structure):
         return np.array([self._iarr[i] for i in range(self.ipts)])
              
 class SETTINGS(ctypes.Structure):
+      '''
+      The class that contains the light curve settings
+      
+      '''
       _fields_ = [("exptime", ctypes.c_double),
                   ("keptol", ctypes.c_double),
                   ("fullorbit", ctypes.c_int),
@@ -384,12 +405,57 @@ def RaiseError(err):
 
 class Transit():
   '''
-  A user-friendly wrapper around the ``ctypes`` routines.
+  A user-friendly wrapper around the :py:class:`ctypes` routines.
+  
+  :param kwargs: The :py:mod:`pysyzygy` keyword arguments. These are:
+  
+    - **b** or **bcirc** - The (circular) impact parameter. Default `0.`
+    - **MpMs** - The planet-star mass ratio. Default `0.`
+    - **per** - The planet orbital period in days. Default `10.`
+    - **RpRs** - The planet-star radius ratio. Default `0.1`
+    - **rhos** or **aRs** - The stellar density in `g/cm^3` or the semi-major axis-stellar radius ratio. \
+                            Default is `rhos = 1.4`, the density of the Sun
+    - **ecc** and **w** or **esw** and **ecw** - The eccentricity and the longitude of pericenter in radians, \
+                                                 or the two eccentricity vectors. Default is `ecc = 0.` and `w = 0.`
+    - **t0** or **times** - The time of first transit, or the time of each of the transits (in case \
+                            they are not periodic) in days. Default is `t0 = 0.`
+  
+    - **ldmodel** - The limb darkening model. Default `ps.QUADRATIC` (only option for now!)
+    - **u1** and **u2** or **q1** and **q2** - The quadratic limb darkening parameters (u1, u2) or the
+                                               modified quadratic limb darkening parameters (q1, q2)
+                                               from `Kipping (2013) <http://dx.doi.org/10.1093/mnras/stt1435>`_.
+                                               Default is `u1 = 0.40` and `u2 = 0.26`
+    
+    - **exptime** - The exposure time in days for binning the model. Default `ps.KEPLONGEXP`
+    - **fullorbit** - Compute the orbital parameters for the entire orbit? Only useful if \
+                      you're interested in the full arrays of orbital parameters. Default `False`
+    - **maxpts** - Maximum number of points in the model. Increase this if you're getting errors. Default `10,000`
+    - **exppts** - The number of exposure points per cadence when binning the model. Default `50`
+    - **binmethod** - The binning method. Default `ps.RIEMANN` (recommended)
+    - **intmethod** - The integration method. Default `ps.SMARTINT` (recommended)
+    - **keptol** - The tolerance of the Kepler solver. Default `1.e-15`
+    - **maxkepiter** - Maximum number of iterations in the Kepler solver. Default `100`
+    - **kepsolver** - The Kepler solver to use. Default `ps.NEWTON` (recommended)
+
+  Once a :py:class:`Transit` model is instantiated, it may be called as follows:
+  
+  .. code-block::python
+      
+      import pysyzygy as ps
+      import numpy as np
+      
+      # Instantiate the model
+      trn = ps.Transit()
+      
+      # The observation times
+      time = np.linspace(0, 10, 100)
+      
+      # Obtain the actual model, evaluated on the time array
+      model = trn(time)
   
   '''
   
   def __init__(self, **kwargs):
-          
     self.arrays = ARRAYS()
     self.limbdark = LIMBDARK()
     self.transit = TRANSIT()
@@ -398,6 +464,7 @@ class Transit():
   
   def update(self, **kwargs):
     '''
+    Update the transit keyword arguments
     
     '''
     
@@ -457,10 +524,20 @@ class Transit():
     return res
   
   def Compute(self):
+    '''
+    Computes the light curve model
+    
+    '''
+    
     err = _Compute(self.transit, self.limbdark, self.settings, self.arrays)
     if err != _ERR_NONE: RaiseError(err)    
 
   def Bin(self):
+    '''
+    Bins the light curve model to the provided time array
+    
+    '''
+    
     err = _Bin(self.transit, self.limbdark, self.settings, self.arrays)
     if err != _ERR_NONE: RaiseError(err)
   

@@ -34,25 +34,24 @@ Calling pysyzygy...
   import numpy as np
   
   # Orbital elements
-  kwargs = {'rhos': 1.0, 'MpMs': 0.001, 'esw': 0.1, 
-            'ecw': 0.1, 'per': 1.0, 'RpRs': 0.1, 
-            't0': 0.0, 'q1': 1.0, 'q2': 0.0,
-            'bcirc': 0.5}
+  kwargs = {'rhos': 1.0,          # Stellar density in g/cm^3
+            'MpMs': 0.001,        # Planet-star mass ratio
+            'esw': 0.1,           # Eccentricity vectors
+            'ecw': 0.1, 
+            'per': 1.0,           # Period in days
+            'RpRs': 0.1,          # Planet-star radius ratio
+            't0': 0.0,            # Time of first transit in days
+            'q1': 1.0,            # Kipping (2013) quadratic limb darkening coefficients
+            'q2': 0.0,
+            'b': 0.5}             # Circular impact parameter
   
   # Instantiate a transit object
   trn = ps.Transit(**kwargs) 
   
-  # Compute the orbital solution and the lightcurve
-  trn.Compute()
-  
-  # Bin the lightcurve to simulate an observation with finite exposure time
-  trn.Bin()
-  
-  # Now interpolate to get the lightcurve on a grid of observation times
+  # Now evaluate the lightcurve on a grid of observation times
   t = np.arange(0., 10., ps.transit.KEPLONGCAD)
-  flux = trn.Interpolate(t)
+  flux = trn(t)
         
-Stay tuned; detailed documentation is coming soon!
 
 Notes
 =====

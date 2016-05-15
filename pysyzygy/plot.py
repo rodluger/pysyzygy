@@ -4,6 +4,17 @@
 plot.py
 -------
 
+Plots a simple :py:mod:`pysyzygy` light curve, along with the
+observer view of the orbit, the limb darkening profile, and a 
+table of the transit parameters.
+
+.. figure:: ../img/transit_plot.png
+    :width: 600px
+    :align: center
+    :height: 100px
+    :alt: alternate text
+    :figclass: align-center
+
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
@@ -19,6 +30,12 @@ __all__ = ['PlotTransit']
 def I(r, limbdark):
   '''
   The standard quadratic limb darkening law.
+  
+  :param ndarray r: The radius vector
+  :param limbdark: A :py:class:`pysyzygy.transit.LIMBDARK` instance containing 
+                   the limb darkening law information
+  
+  :returns: The stellar intensity as a function of `r`
   
   '''
   
@@ -37,18 +54,30 @@ def I(r, limbdark):
   else:
     raise Exception('Invalid limb darkening model.')
 
-def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "transit", 
+def PlotTransit(compact = False, ldplot = True, plottitle = "", 
                 xlim = None, binned = True, **kwargs):
   '''
-    
+  Plots a light curve described by `kwargs`
+  
+  :param bool compact: Display the compact version of the plot? Default `False`
+  :param bool ldplot: Displat the limb darkening inset? Default `True`
+  :param str plottitle: The title of the plot. Default `""`
+  :param float xlim: The half-width of the orbit plot in stellar radii. Default is to \
+                     auto adjust this
+  :param bool binned: Bin the light curve model to the exposure time? Default `True`
+  :param kwargs: Any keyword arguments to be passed to :py:func:`pysyzygy.transit.Transit`
+  
+  :returns fig: The :py:mod:`matplotlib` figure object
+  
   '''
 
   # Plotting
-  fig = pl.figure()
-  fig.set_size_inches(12,8)
+  fig = pl.figure(figsize = (12,8))
   fig.subplots_adjust(hspace=0.3)
   ax1, ax2 = pl.subplot(211), pl.subplot(212)
-
+  if not compact:
+    fig.subplots_adjust(right = 0.7)
+    
   t0 = kwargs.pop('t0', 0.)
   trn = Transit(**kwargs)
   try:
@@ -123,7 +152,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
     if compact:
       inset1 = pl.axes([0.145, 0.32, .09, .1])
     else:
-      inset1 = fig.add_axes([0.925,0.3,0.2,0.15])
+      inset1 = fig.add_axes([0.725,0.3,0.2,0.15])
     inset1.plot(r,Ir,'k-')
     pl.setp(inset1, xlim=(-0.1,1.1), ylim=(-0.1,1.1), xticks=[0,1], yticks=[0,1])
     for tick in inset1.xaxis.get_major_ticks() + inset1.yaxis.get_major_ticks():
@@ -136,7 +165,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   if compact:
     inset2 = pl.axes([0.135, 0.115, .1, .1])
   else:
-    inset2 = fig.add_axes([0.925,0.1,0.2,0.15])
+    inset2 = fig.add_axes([0.725,0.1,0.2,0.15])
   pl.setp(inset2, xticks=[], yticks=[])
   trn.transit.bcirc = trn.transit.aRs                                                 # This ensures we are face-on
   try:
@@ -194,7 +223,7 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
   ax1.set_title(plottitle, fontsize=12)
   
   if not compact:
-    rect = 0.925,0.55,0.2,0.35
+    rect = 0.725,0.55,0.2,0.35
     ax3 = fig.add_axes(rect)
     ax3.xaxis.set_visible(False)
     ax3.yaxis.set_visible(False)
@@ -224,5 +253,4 @@ def PlotTransit(compact = False, ldplot = True, plottitle = "", plotname = "tran
       ax3.annotate(r, xy=(0.35, yt), xycoords="axes fraction", fontsize=16)
       yt -= 0.1
 
-  fig.savefig(plotname, bbox_inches='tight')
-  pl.close()
+  return fig

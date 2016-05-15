@@ -4,6 +4,18 @@
 simple.py
 ---------
 
+Plots a simple light curve, the planet orbit
+as seen from the top and from the observer's
+viewpoint, and the orbital elements as a
+function of time:
+
+.. figure:: ../img/simple.png
+    :width: 600px
+    :align: center
+    :height: 100px
+    :alt: alternate text
+    :figclass: align-center
+
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals

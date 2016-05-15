@@ -4,6 +4,17 @@
 transit_plot.py
 ---------------
 
+Plots a simple light curve using the :py:func:`pysyzygy.PlotTransit`
+function, which also shows the orbit, the limb-darkened stellar disk,
+and a table with all the planet parameters.
+
+.. figure:: ../img/transit_plot.png
+    :width: 600px
+    :align: center
+    :height: 100px
+    :alt: alternate text
+    :figclass: align-center
+
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
@@ -20,4 +31,5 @@ kwargs = dict(RpRs = 0.1, b = 0.5,
               maxpts = 20000,
               exptime = ps.KEPLONGEXP)
 
-ps.PlotTransit() #**kwargs)
+fig = ps.PlotTransit(**kwargs)
+pl.show()

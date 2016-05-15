@@ -4,6 +4,16 @@
 feature_test.py
 ---------------
 
+A simple test that plots a bunch of different light curves.
+The output should be similar to this figure:
+
+.. figure:: ../img/feature_test.png
+    :width: 600px
+    :align: center
+    :height: 100px
+    :alt: alternate text
+    :figclass: align-center
+
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
@@ -11,7 +21,7 @@ import pysyzygy as ps
 import numpy as np
 import matplotlib.pyplot as pl
 
-fig, ax = pl.subplots(4, 6, figsize = (24,8))
+fig, ax = pl.subplots(5, 5, figsize = (24,16))
 fig.subplots_adjust(wspace = 0, hspace = 0, left = 0.01, right = 0.99, bottom = 0.01, top = 0.99)
 ax = ax.flatten()
 for axis in ax:
@@ -182,7 +192,7 @@ ax[17].annotate('SHOULD BE IDENTICAL', xy = (0.05, 0.9), xycoords = 'axes fracti
 
 # Binned/unbinned flux
 time = np.linspace(-0.5,0.5,1000)
-for param in ['binned', 'flux']:
+for param in ['binned', 'unbinned']:
   trn = ps.Transit(exptime = 0.1)
   ax[18].plot(time, trn(time, param = param), label = 'param = %s' % param)
 ax[18].legend(loc = 'lower left', fontsize = 8)
@@ -227,5 +237,6 @@ ax[22].axhline(0, alpha = 0.5)
 ax[22].legend(loc = 'lower left', fontsize = 8)
 ax[22].margins(0.,0.2) 
 ax[22].annotate('TOP VIEW', xy = (0.05, 0.9), xycoords = 'axes fraction')
-  
-fig.savefig('feature_test.png')
+
+# Show the plot
+pl.show()
