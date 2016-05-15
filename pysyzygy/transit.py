@@ -8,10 +8,12 @@ A :py:mod:`ctypes` wrapper around a generalized C implementation of the
 `Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_
 transit model
 
+.. warning:: The longitude of pericenter `w` may be defined differently here than in other transit codes; \
+             watch out for a possible offset of :math:`\pi` from what you're used to.
+
 .. todo::
    - Add nonlinear limb darkening
    - Add secondary eclipses
-   - Longitude of pericenter
    
 '''
 
@@ -421,9 +423,9 @@ class Transit():
                             they are not periodic) in days. Default is `t0 = 0.`
   
     - **ldmodel** - The limb darkening model. Default `ps.QUADRATIC` (only option for now!)
-    - **u1** and **u2** or **q1** and **q2** - The quadratic limb darkening parameters (u1, u2) or the
-                                               modified quadratic limb darkening parameters (q1, q2)
-                                               from `Kipping (2013) <http://dx.doi.org/10.1093/mnras/stt1435>`_.
+    - **u1** and **u2** or **q1** and **q2** - The quadratic limb darkening parameters (u1, u2) or the \
+                                               modified quadratic limb darkening parameters (q1, q2) \
+                                               from `Kipping (2013) <http://dx.doi.org/10.1093/mnras/stt1435>`_. \
                                                Default is `u1 = 0.40` and `u2 = 0.26`
     
     - **exptime** - The exposure time in days for binning the model. Default `ps.KEPLONGEXP`
