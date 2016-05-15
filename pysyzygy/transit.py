@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
-transit.py
-----------
+:py:mod:`transit.py` - Transit models
+-------------------------------------
 
 A :py:mod:`ctypes` wrapper around a generalized C implementation of the 
 `Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_

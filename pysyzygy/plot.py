@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
-plot.py
--------
+:py:mod:`utils.py` - Plotting routines
+--------------------------------------
 
 Plots a simple :py:mod:`pysyzygy` light curve, along with the
 observer view of the orbit, the limb darkening profile, and a 
