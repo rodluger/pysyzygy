@@ -8,7 +8,7 @@ Plots a simple :py:mod:`pysyzygy` light curve, along with the
 observer view of the orbit, the limb darkening profile, and a 
 table of the transit parameters.
 
-.. figure:: ../pysyzygy/img/transit_plot.png
+.. figure:: /../pysyzygy/img/transit_plot.png
     :width: 600px
     :align: center
     :height: 100px
