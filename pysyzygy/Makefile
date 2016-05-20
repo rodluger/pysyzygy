@@ -16,9 +16,9 @@ GCC = gcc
 .SILENT: all
 
 all:
-	echo "Compiling C source code..."
+	echo "[pysyzygy] Compiling C source code..."
 	${GCC} ${GCC_FLAGS1} transit.c
-	echo "Generating shared library..."
+	echo "[pysyzygy] Generating shared library..."
 	gcc ${GCC_FLAGS2} -o transitlib.so transit.o -lc
 	rm transit.o
-	echo "Install successful."
+	echo "[pysyzygy] Install successful."

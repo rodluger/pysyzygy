@@ -26,4 +26,3 @@ if not __PYSYZYGY_SETUP__:
   
   from .transit import *
   from .plot import *
-
