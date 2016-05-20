@@ -35,11 +35,6 @@ setup(name = 'pysyzygy',
       author = 'Rodrigo Luger',
       author_email = 'rodluger@uw.edu',
       license = 'MIT',
-      packages = ['pysyzygy'],
-      install_requires = [
-                          'numpy',
-                          'scipy',
-                          'matplotlib',
-                         ],
+      packages = [str('pysyzygy')],
       include_package_data = True,
       zip_safe = False)
