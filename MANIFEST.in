@@ -1,6 +1,6 @@
 include README.rst
-include Makefile
 include examples/*
 include img/*
 include pysyzygy/transit.c
 include pysyzygy/transit.h
+include pysyzygy/Makefile

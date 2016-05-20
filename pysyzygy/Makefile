@@ -17,9 +17,8 @@ GCC = gcc
 
 all:
 	echo "Compiling C source code..."
-	${GCC} ${GCC_FLAGS1} pysyzygy/transit.c
+	${GCC} ${GCC_FLAGS1} transit.c
 	echo "Generating shared library..."
 	gcc ${GCC_FLAGS2} -o transitlib.so transit.o -lc
 	rm transit.o
-	mv transitlib.so pysyzygy/.
 	echo "Install successful."
