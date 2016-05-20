@@ -337,7 +337,7 @@ class SETTINGS(ctypes.Structure):
 try:
   lib = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'transitlib.so'))
 except:
-  raise Exception("Can't find ``transitlib.so``; please run ``make`` to compile the code.")
+  raise Exception("Can't find `transitlib.so`; please run `make` to compile `pysyzygy`.")
 
 # Declare the C functions; user should access these through the Transit() class below
 _Compute = lib.Compute
