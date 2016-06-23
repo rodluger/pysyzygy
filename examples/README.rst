@@ -27,8 +27,8 @@ function of time:
     :alt: alternate text
     :figclass: align-center
 
-feature_test
-------------
+feature_test.py
+---------------
 
 A simple test that plots a bunch of different light curves.
 The output should be similar to this figure:
