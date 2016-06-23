@@ -7,3 +7,11 @@ transits.py
 '''
 
 import pysyzygy as ps
+
+def test_transit():
+  '''
+  
+  '''
+  
+  # Nothing for now!
+  pass
