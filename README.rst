@@ -1,11 +1,10 @@
 py·sy·zy·gy
 -----------
 /ˈpīsizijē/ |speaker|
-
-.. |speaker| image:: img/speaker.png?raw=True
-             :target: http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3
 .. image:: https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master :target: https://coveralls.io/github/rodluger/pysyzygy?branch=master
 .. image:: https://travis-ci.org/rodluger/pysyzygy.svg?branch=master :target: https://travis-ci.org/rodluger/pysyzygy
+
+.. |speaker| image:: img/speaker.png?raw=True :target: http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3
 
 *noun*
 
