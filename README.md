@@ -26,27 +26,28 @@ Calling pysyzygy...
 ... is super easy.
 
 ```python
-  import numpy as np
-  
-  # Orbital elements
-  kwargs = {'rhos': 1.0,          # Stellar density in g/cm^3
-            'MpMs': 0.001,        # Planet-star mass ratio
-            'esw': 0.1,           # Eccentricity vectors
-            'ecw': 0.1, 
-            'per': 1.0,           # Period in days
-            'RpRs': 0.1,          # Planet-star radius ratio
-            't0': 0.0,            # Time of first transit in days
-            'q1': 1.0,            # Kipping (2013) quadratic limb darkening coefficients
-            'q2': 0.0,
-            'b': 0.5}             # Circular impact parameter
-  
-  # Instantiate a transit object
-  trn = ps.Transit(**kwargs) 
-  
-  # Now evaluate the lightcurve on a grid of observation times
-  t = np.arange(0., 10., ps.transit.KEPLONGCAD)
-  flux = trn(t)
+import pysyzygy as ps
+import numpy as np
+import matplotlib.pyplot as pl
+
+# Instantiate a transit object
+trn = ps.Transit(t0 = 0.5, RpRs = 0.1, per = 1.234) 
+
+# Now evaluate the light curve on a grid of observation times
+t = np.arange(0., 3.5, ps.transit.KEPSHRTCAD)
+flux = trn(t)
+
+# Plot the light curve
+fig, ax = pl.subplots(figsize = (12, 5))
+fig.subplots_adjust(bottom = 0.15)
+ax.plot(t, flux, 'b.')
+ax.set_xlabel('Time (days)', fontsize = 18)
+ax.set_ylabel('Relative flux', fontsize = 18)
+ax.margins(None, 0.5)
+pl.show()
 ```     
+
+![transit](img/hotjup.png?raw=True)
 
 Notes
 =====
