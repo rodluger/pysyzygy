@@ -1,5 +1,6 @@
 .. image:: https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master :target: https://coveralls.io/github/rodluger/pysyzygy?branch=master
-
+.. image:: https://travis-ci.org/rodluger/pysyzygy.svg?branch=master :target: https://travis-ci.org/rodluger/pysyzygy
+    
 py·sy·zy·gy
 -----------
 /ˈpīsizijē/ |speaker|
@@ -21,10 +22,8 @@ Installation
 ============
 Clone the repository and run
 
->>> make
+>>> python setup.py install
 
-to build the transit module. Add the top-level folder to your ``$PATH``, then call or 
-import ``pysyzygy`` to begin plotting transits!
 
 Calling pysyzygy...
 ===================
