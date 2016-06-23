@@ -52,4 +52,7 @@ pl.show()
 Notes
 =====
 
+A more detailed documentation coming soon. For now, check out the [examples](examples) directory for
+some cool things you can do with ``pysyzygy``.
+
 Feel free to change, adapt, or incorporate this code into your project, but please make sure to cite this repository, as well as [Mandel and Agol (2002)](http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>), the transit model on which ``pysyzygy`` is based.
