@@ -1,3 +1,5 @@
+.. image:: https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master :target: https://coveralls.io/github/rodluger/pysyzygy?branch=master
+
 py·sy·zy·gy
 -----------
 /ˈpīsizijē/ |speaker|
