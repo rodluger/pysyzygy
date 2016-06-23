@@ -11,6 +11,7 @@ addons:
     - python-pip
     - python-numpy
     - python-scipy
+    - python-matplotlib
 
 install:
   - python setup.py install
