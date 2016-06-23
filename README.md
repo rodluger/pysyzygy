@@ -1,9 +1,9 @@
 py·sy·zy·gy
 -----------
 /ˈpīsizijē/
-<a href="http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3"><img style="float: right;" src="img/speaker.png?raw=True"></a>
-<a href="https://travis-ci.org/rodluger/pysyzygy"><img style="vertical-align: super;" src="https://travis-ci.org/rodluger/pysyzygy.svg?branch=master"></a>
-<a href="https://coveralls.io/github/rodluger/pysyzygy?branch=master"><img style="float: right;" src="https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master"></a>
+<a href="http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3"><img style="float: right;" src="img/speaker.png?raw=True"/></a>
+<a href="https://travis-ci.org/rodluger/pysyzygy"><img align="right" src="https://travis-ci.org/rodluger/pysyzygy.svg?branch=master"/></a>
+<a href="https://coveralls.io/github/rodluger/pysyzygy?branch=master"><img align="right" src="https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master"/></a>
 
 **1.** A fast and general planet transit [syzygy](http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29) code written in C and in Python.
 
