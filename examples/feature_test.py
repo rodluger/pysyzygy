@@ -64,7 +64,7 @@ if __name__ == '__main__':
     ax[3].plot(time, trn(time), label = 'rhos = %.2f' % rhos)
   ax[3].legend(loc = 'lower left', fontsize = 8)
   ax[3].margins(0.,0.2) 
-  ax[3].annotate('DIFFERENT STELLAR DENSITYIES', xy = (0.05, 0.9), xycoords = 'axes fraction') 
+  ax[3].annotate('DIFFERENT STELLAR DENSITIES', xy = (0.05, 0.9), xycoords = 'axes fraction') 
 
   # Different semi-major axes
   time = np.linspace(-0.5,0.5,1000)
