@@ -1,7 +1,7 @@
 py·sy·zy·gy
 -----------
 /ˈpīsizijē/
-<a href="http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3"><img style="float: right;" src="img/speaker.png?raw=True"/></a>
+<a href="https://raw.githubusercontent.com/rodluger/pysyzygy/master/img/pysyzygy.mp3"><img style="float: right;" src="img/speaker.png?raw=True"/></a>
 <a href="https://raw.githubusercontent.com/rodluger/pysyzygy/master/LICENSE"><img align="right" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
 <a href="https://coveralls.io/github/rodluger/pysyzygy?branch=master"><img align="right" src="https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master"/></a>
 <a href="https://travis-ci.org/rodluger/pysyzygy"><img align="right" src="https://travis-ci.org/rodluger/pysyzygy.svg?branch=master"/></a>
