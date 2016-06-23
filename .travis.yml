@@ -11,9 +11,9 @@ addons:
     - python-pip
     - python-numpy
     - python-scipy
-    - python-matplotlib
 
 install:
+  - pip install matplotlib
   - python setup.py install
 
 script: nosetests -w tests
