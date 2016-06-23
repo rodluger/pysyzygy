@@ -18,8 +18,8 @@ install:
   - python setup.py install
 
 script: 
-  nosetests -w tests
-  coverage run --source=pysyzygy setup.py test
+  - nosetests -w tests
+  - coverage run --source=pysyzygy setup.py test
 
 after_success:
   - coveralls
