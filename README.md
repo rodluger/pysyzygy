@@ -1,36 +1,32 @@
 py·sy·zy·gy
 -----------
-/ˈpīsizijē/ |speaker|
-
-.. image:: https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master :target: https://coveralls.io/github/rodluger/pysyzygy?branch=master
-.. image:: https://travis-ci.org/rodluger/pysyzygy.svg?branch=master :target: https://travis-ci.org/rodluger/pysyzygy
-
-.. |speaker| image:: img/speaker.png?raw=True :target: http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3
+/ˈpīsizijē/
+[![Speaker](img/speaker.png?raw=True)](http://www.astro.washington.edu/users/rodluger/pysyzygy.mp3)
+[![Coveralls](https://coveralls.io/repos/github/rodluger/pysyzygy/badge.svg?branch=master)](https://coveralls.io/github/rodluger/pysyzygy?branch=master)
+[![Travis](https://travis-ci.org/rodluger/pysyzygy.svg?branch=master)](https://travis-ci.org/rodluger/pysyzygy)
 
 *noun*
 
-**1.** A fast and general planet transit (`syzygy <http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29>`_) code written in C and in Python.
+**1.** A fast and general planet transit [syzygy](http://en.wikipedia.org/wiki/Syzygy_%28astronomy%29) code written in C and in Python.
 
 **2.** ``pysyzygy`` computes **fast** lightcurves for the most general case of a *massive*, *eccentric* planet orbiting a limb-darkened star. Here's a sample output image of an assymetric transit:
 
-.. image:: img/transit.png?raw=True
-   :alt: pysyzygy
-   :align: center
+![transit](img/transit.png?raw=True)
 
 Installation
 ============
 Clone the repository and run
 
->>> python setup.py install
-
+```
+python setup.py install
+```
 
 Calling pysyzygy...
 ===================
 
 ... is super easy.
 
-.. code-block:: python
-  
+```
   import numpy as np
   
   # Orbital elements
@@ -51,9 +47,9 @@ Calling pysyzygy...
   # Now evaluate the lightcurve on a grid of observation times
   t = np.arange(0., 10., ps.transit.KEPLONGCAD)
   flux = trn(t)
-        
+```     
 
 Notes
 =====
 
-Feel free to change, adapt, or incorporate this code into your project, but please make sure to cite this repository, as well as `Mandel and Agol (2002) <http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>`_, the transit model on which ``pysyzygy`` is based.
+Feel free to change, adapt, or incorporate this code into your project, but please make sure to cite this repository, as well as [Mandel and Agol (2002)](http://adsabs.harvard.edu/abs/2002ApJ...580L.171M>), the transit model on which ``pysyzygy`` is based.
