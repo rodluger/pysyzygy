@@ -6,8 +6,9 @@ test_main.py
 
 '''
 
-import pysyzygy as ps
+
 import numpy as np
+from pysyzygy.transit import Transit
 
 def test_main():
   '''
@@ -15,7 +16,7 @@ def test_main():
   '''
   
   time = np.linspace(-0.5,0.5,1000)
-  trn = ps.Transit(per = 5., RpRs = 0.1, ecw = 0.5, esw = -0.5, b = 0., fullorbit = True, maxpts = 20000)
+  trn = Transit(per = 5., RpRs = 0.1, ecw = 0.5, esw = -0.5, b = 0., fullorbit = True, maxpts = 20000)
   
   params = ['unbinned', 'binned', 'E', 'f', 'r', 'b', 'x', 'y', 'z']
   truths = [0.998019215638, 0.998019220105, 1.51688474691, 2.27060195612, 

@@ -37,4 +37,7 @@ setup(name = 'pysyzygy',
       license = 'MIT',
       packages = [str('pysyzygy')],
       include_package_data = True,
-      zip_safe = False)
+      zip_safe = False,
+      test_suite='nose.collector',
+      tests_require=['nose']
+      )
