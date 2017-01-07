@@ -14,7 +14,7 @@ else:
 builtins.__PYSYZYGY_SETUP__ = True
 import pysyzygy
 
-long_description = 
+long_description = \
 """
 A fast and general planet transit (syzygy) code written in C and in Python.
 Pysyzygy computes fast lightcurves for the most general case of a massive, 
