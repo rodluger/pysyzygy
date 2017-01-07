@@ -14,16 +14,19 @@ else:
 builtins.__PYSYZYGY_SETUP__ = True
 import pysyzygy
 
-# Get the long description from the README
-def readme():
-  with open('README.md') as f:
-    return f.read()
+long_description = 
+"""
+A fast and general planet transit (syzygy) code written in C and in Python.
+Pysyzygy computes fast lightcurves for the most general case of a massive, 
+eccentric planet orbiting a limb-darkened star. The code is based
+on the Mandel & Agol (2002) transit model.
+"""
 
 # Setup!
 setup(name = 'pysyzygy',
       version = pysyzygy.__version__,
       description = 'Transit modeling in Python',
-      long_description = readme(),
+      long_description = long_description,
       classifiers = [
                       'Development Status :: 3 - Alpha',
                       'License :: OSI Approved :: MIT License',
@@ -35,8 +38,15 @@ setup(name = 'pysyzygy',
       author = 'Rodrigo Luger',
       author_email = 'rodluger@uw.edu',
       license = 'MIT',
+      keywords = 'exoplanets transits',
       packages = [str('pysyzygy')],
       include_package_data = True,
+      install_requires = [
+                          'numpy>=1.8',
+                          'scipy',
+                          'matplotlib',
+                          'ctypes'
+                         ],
       zip_safe = False,
       test_suite='nose.collector',
       tests_require=['nose']
