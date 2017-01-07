@@ -44,8 +44,7 @@ setup(name = 'pysyzygy',
       install_requires = [
                           'numpy>=1.8',
                           'scipy',
-                          'matplotlib',
-                          'ctypes'
+                          'matplotlib'
                          ],
       zip_safe = False,
       test_suite='nose.collector',
